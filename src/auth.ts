@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { AuthError } from "next-auth";
-import bcrypt from "bcryptjs";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type AdminRole = "super_admin" | "support_worker" | "viewer";
@@ -58,6 +57,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const adminUser = data as AdminUserRow;
+        const bcrypt = await import("bcryptjs");
         const passwordValid = await bcrypt.compare(password, adminUser.password_hash);
         if (!passwordValid) {
           throw new InvalidCredentialsError();
