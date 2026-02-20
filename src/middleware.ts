@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { isAdminRole } from "@/lib/admin-rbac";
 
 export default auth((request) => {
   const { pathname } = request.nextUrl;
@@ -13,6 +14,12 @@ export default auth((request) => {
   if (!request.auth?.user) {
     const loginUrl = new URL("/admin/login", request.nextUrl.origin);
     loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (!isAdminRole(request.auth.user.role)) {
+    const loginUrl = new URL("/admin/login", request.nextUrl.origin);
+    loginUrl.searchParams.set("error", "forbidden");
     return NextResponse.redirect(loginUrl);
   }
 

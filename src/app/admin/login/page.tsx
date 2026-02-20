@@ -7,6 +7,8 @@ async function loginAction(formData: FormData) {
 
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const nextPath = String(formData.get("next") ?? "/admin");
+  const redirectTo = nextPath.startsWith("/admin") ? nextPath : "/admin";
 
   if (!email || !password) {
     redirect("/admin/login?error=missing");
@@ -16,7 +18,7 @@ async function loginAction(formData: FormData) {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/admin",
+      redirectTo,
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -28,7 +30,7 @@ async function loginAction(formData: FormData) {
 }
 
 interface AdminLoginPageProps {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }
 
 export default async function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
@@ -38,7 +40,10 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
   }
 
   const params = await searchParams;
-  const showError = params.error === "invalid" || params.error === "missing";
+  const nextPath = params.next?.startsWith("/admin") ? params.next : "/admin";
+  const errorCode = params.error;
+  const showError =
+    errorCode === "invalid" || errorCode === "missing" || errorCode === "forbidden";
 
   return (
     <div className="min-h-screen bg-brand-cream flex items-center justify-center px-4">
@@ -50,11 +55,14 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
 
         {showError && (
           <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Invalid email or password.
+            {errorCode === "forbidden"
+              ? "Your account does not have admin access."
+              : "Invalid email or password."}
           </div>
         )}
 
         <form action={loginAction} className="space-y-4">
+          <input type="hidden" name="next" value={nextPath} />
           <div>
             <label htmlFor="email" className="block text-sm font-semibold text-brand-dark mb-1">
               Email

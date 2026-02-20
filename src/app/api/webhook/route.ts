@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizeCompanyName } from "@/lib/company-normalization";
+import { sanitizeDonorName, sanitizeSupportMessage } from "@/lib/support-message";
 
 type DonationPayload = {
   donationKey: string;
@@ -47,6 +49,13 @@ function eventTimestampToIso(timestamp: number): string {
   return new Date(timestamp * 1000).toISOString();
 }
 
+function normaliseCompanyForStorage(rawValue: string): string {
+  if (!rawValue.trim()) {
+    return "";
+  }
+  return normalizeCompanyName(rawValue);
+}
+
 function buildCheckoutPayload(
   event: Stripe.Event,
   session: Stripe.Checkout.Session
@@ -56,6 +65,8 @@ function buildCheckoutPayload(
   const savingsPence = asNumber(meta.savingsPence);
   const spendablePence = asNumber(meta.spendablePence || donationPence - savingsPence);
   const platformFeePence = asNumber(meta.serviceChargePence);
+  const rawCompanyName = asString(meta.companyName);
+  const rawDonorName = asString(meta.donorName);
 
   return {
     donationKey: `checkout:${session.id}`,
@@ -77,12 +88,12 @@ function buildCheckoutPayload(
     platformFeePence,
     totalPaidPence: asNumber(session.amount_total),
     currency: asString(session.currency || "gbp"),
-    companyName: asString(meta.companyName),
+    companyName: normaliseCompanyForStorage(rawCompanyName),
     wishlistItemCode: asString(meta.wishlistItemId),
     notifyEmail: asBoolean(meta.notifyEmail),
     donorEmail: asString(session.customer_details?.email),
-    message: asString(meta.message),
-    donorName: "Anonymous",
+    message: sanitizeSupportMessage(asString(meta.message)),
+    donorName: sanitizeDonorName(rawDonorName),
     createdAtIso: eventTimestampToIso(event.created),
   };
 }
@@ -122,6 +133,8 @@ async function buildInvoicePayload(
     metadata.spendablePence || donationPence - savingsPence
   );
   const platformFeePence = asNumber(metadata.serviceChargePence);
+  const rawCompanyName = asString(metadata.companyName);
+  const rawDonorName = asString(metadata.donorName);
 
   return {
     donationKey: `invoice:${invoice.id}`,
@@ -141,12 +154,12 @@ async function buildInvoicePayload(
     platformFeePence,
     totalPaidPence: asNumber(invoice.amount_paid),
     currency: asString(invoice.currency || "gbp"),
-    companyName: asString(metadata.companyName),
+    companyName: normaliseCompanyForStorage(rawCompanyName),
     wishlistItemCode: asString(metadata.wishlistItemId),
     notifyEmail: asBoolean(metadata.notifyEmail),
     donorEmail: asString(invoice.customer_email),
-    message: asString(metadata.message),
-    donorName: "Anonymous",
+    message: sanitizeSupportMessage(asString(metadata.message)),
+    donorName: sanitizeDonorName(rawDonorName),
     createdAtIso: eventTimestampToIso(event.created),
   };
 }
@@ -267,6 +280,7 @@ export async function POST(request: NextRequest) {
 
   const eventInserted = await persistWebhookEventStart(event);
   if (!eventInserted) {
+    await markWebhookEvent(event.id, "duplicate", "Duplicate event replay");
     return NextResponse.json({ received: true, duplicate: true });
   }
 

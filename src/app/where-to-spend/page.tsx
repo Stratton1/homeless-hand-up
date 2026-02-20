@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { retailerPartners } from "@/lib/users";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
@@ -82,11 +83,23 @@ export default function WhereToSpendPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {supermarkets.map((retailer) => (
                 <div
-                  key={retailer.name}
+                  key={retailer.slug}
                   className="bg-white rounded-2xl p-6 border border-brand-warm/10 shadow-sm hover:shadow-lg hover:shadow-brand-warm/10 transition-all hover:-translate-y-1 group"
                 >
-                  <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
-                    {retailer.logo}
+                  <div className="h-16 mb-4 rounded-xl border border-brand-warm/10 bg-brand-cream/30 flex items-center justify-start px-4">
+                    {retailer.logo.type === "svg" ? (
+                      <Image
+                        src={retailer.logo.src}
+                        alt={retailer.logo.alt}
+                        width={180}
+                        height={64}
+                        className="max-h-10 w-auto object-contain"
+                      />
+                    ) : (
+                      <span className="text-5xl group-hover:scale-110 transition-transform">
+                        {retailer.logo.value}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-xl font-bold text-brand-dark mb-2">{retailer.name}</h3>
                   <p className="text-sm text-brand-gray mb-3">{retailer.description}</p>
@@ -108,11 +121,23 @@ export default function WhereToSpendPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {other.map((retailer) => (
                 <div
-                  key={retailer.name}
+                  key={retailer.slug}
                   className="bg-white rounded-2xl p-6 border border-brand-trust/10 shadow-sm hover:shadow-lg hover:shadow-brand-trust/10 transition-all hover:-translate-y-1 group"
                 >
-                  <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
-                    {retailer.logo}
+                  <div className="h-16 mb-4 rounded-xl border border-brand-trust/10 bg-brand-cream/30 flex items-center justify-start px-4">
+                    {retailer.logo.type === "svg" ? (
+                      <Image
+                        src={retailer.logo.src}
+                        alt={retailer.logo.alt}
+                        width={180}
+                        height={64}
+                        className="max-h-10 w-auto object-contain"
+                      />
+                    ) : (
+                      <span className="text-5xl group-hover:scale-110 transition-transform">
+                        {retailer.logo.value}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-xl font-bold text-brand-dark mb-2">{retailer.name}</h3>
                   <p className="text-sm text-brand-gray mb-3">{retailer.description}</p>
@@ -123,6 +148,11 @@ export default function WhereToSpendPage() {
               ))}
             </div>
           </div>
+
+          <p className="mt-8 text-xs text-brand-gray">
+            Brand logos are used for identification only. Trademarks remain the property of their
+            respective owners.
+          </p>
         </div>
       </section>
 

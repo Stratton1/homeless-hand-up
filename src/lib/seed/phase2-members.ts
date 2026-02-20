@@ -6,6 +6,7 @@
  *
  * Each member has a unique slug used in their donation URL and QR code.
  */
+import { retailerLogoManifest, type RetailerSlug } from "../retailer-logos";
 
 /** A wishlist item that donors can fund */
 export interface WishlistItem {
@@ -263,23 +264,91 @@ export function getPlatformStats(): PlatformStats {
 }
 
 /** Retailer partners for the "Where to Spend" page */
+export type RetailerLogo =
+  | {
+      type: "svg";
+      src: string;
+      alt: string;
+      sourceRepo: string;
+      sourceUrl: string;
+    }
+  | {
+      type: "emoji";
+      value: string;
+    };
+
 export interface RetailerPartner {
+  slug: RetailerSlug | string;
   name: string;
-  logo: string; // emoji placeholder — real logos in production
+  logo: RetailerLogo;
   category: string;
   description: string;
 }
 
 export const retailerPartners: RetailerPartner[] = [
-  { name: "Tesco", logo: "🏪", category: "Supermarket", description: "Groceries, toiletries, and household essentials" },
-  { name: "Sainsbury's", logo: "🏪", category: "Supermarket", description: "Food, drink, and everyday items" },
-  { name: "Asda", logo: "🏪", category: "Supermarket", description: "Affordable groceries and clothing" },
-  { name: "Morrisons", logo: "🏪", category: "Supermarket", description: "Fresh food and daily essentials" },
-  { name: "Aldi", logo: "🏪", category: "Supermarket", description: "Budget-friendly groceries" },
-  { name: "Lidl", logo: "🏪", category: "Supermarket", description: "Quality food at low prices" },
-  { name: "Greggs", logo: "☕", category: "Cafe", description: "Hot meals, sandwiches, and warm drinks" },
-  { name: "Boots", logo: "💊", category: "Pharmacy", description: "Medicines, toiletries, and health essentials" },
-  { name: "Primark", logo: "👕", category: "Clothing", description: "Affordable clothing and basics" },
+  {
+    slug: "tesco",
+    name: "Tesco",
+    logo: { type: "svg", ...retailerLogoManifest.tesco },
+    category: "Supermarket",
+    description: "Groceries, toiletries, and household essentials",
+  },
+  {
+    slug: "sainsburys",
+    name: "Sainsbury's",
+    logo: { type: "svg", ...retailerLogoManifest.sainsburys },
+    category: "Supermarket",
+    description: "Food, drink, and everyday items",
+  },
+  {
+    slug: "asda",
+    name: "Asda",
+    logo: { type: "svg", ...retailerLogoManifest.asda },
+    category: "Supermarket",
+    description: "Affordable groceries and clothing",
+  },
+  {
+    slug: "morrisons",
+    name: "Morrisons",
+    logo: { type: "svg", ...retailerLogoManifest.morrisons },
+    category: "Supermarket",
+    description: "Fresh food and daily essentials",
+  },
+  {
+    slug: "aldi",
+    name: "Aldi",
+    logo: { type: "svg", ...retailerLogoManifest.aldi },
+    category: "Supermarket",
+    description: "Budget-friendly groceries",
+  },
+  {
+    slug: "lidl",
+    name: "Lidl",
+    logo: { type: "svg", ...retailerLogoManifest.lidl },
+    category: "Supermarket",
+    description: "Quality food at low prices",
+  },
+  {
+    slug: "greggs",
+    name: "Greggs",
+    logo: { type: "emoji", value: "☕" },
+    category: "Cafe",
+    description: "Hot meals, sandwiches, and warm drinks",
+  },
+  {
+    slug: "boots",
+    name: "Boots",
+    logo: { type: "emoji", value: "💊" },
+    category: "Pharmacy",
+    description: "Medicines, toiletries, and health essentials",
+  },
+  {
+    slug: "primark",
+    name: "Primark",
+    logo: { type: "emoji", value: "👕" },
+    category: "Clothing",
+    description: "Affordable clothing and basics",
+  },
 ];
 
 /** Corporate giving leaderboard entry */

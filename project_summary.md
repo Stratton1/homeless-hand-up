@@ -7,15 +7,17 @@ A web-based contactless donation platform where the public can scan a QR code to
 
 ## Current State
 
-**Phases 1 & 2 complete. 20 routes built. Ready for database integration.**
+**Phase 3 code is implemented and in hardening mode. Phase 4 engineering-track work has started.**
 
-The platform has grown from a simple landing page into a full multi-page community platform with:
+The platform now includes:
 
-- **20 routes** all compiling successfully
-- **5 community member profiles** with rich data (journey timeline, wishlist, messages, savings goals)
-- **Enhanced donation form** with one-time/monthly toggle, wishlist funding, messages of support, Gift Aid, company attribution
-- **Multi-page architecture** with shared header/footer navigation
-- **Community-focused language** — "Community Members" not "Users", warm and empowering tone throughout
+- Supabase schema migrations with atomic donation accounting RPC
+- DB-first data layer with optional seed fallback for local/dev
+- Stripe checkout + webhook persistence for one-time and recurring donation flows
+- NextAuth admin login (credentials) backed by Supabase `admin_users`
+- Admin transaction export + monthly reconciliation report endpoint
+- Health endpoint for operational checks: `GET /api/health/data`
+- GitHub-sourced supermarket logos with local hosting and attribution docs
 
 ### What's Working
 
@@ -25,7 +27,7 @@ The platform has grown from a simple landing page into a full multi-page communi
 | Our Mission page | ✅ |
 | How It Works (donors + recipients) | ✅ |
 | Community directory with city filtering | ✅ |
-| Enhanced donation form (one-time/monthly, wishlist, messages, Gift Aid) | ✅ |
+| Enhanced donation form (one-time/monthly, wishlist, messages, Gift Aid disabled until HMRC readiness) | ✅ |
 | Profile pages with journey timeline, savings bar, messages guestbook | ✅ |
 | Transparency dashboard | ✅ |
 | Where to Spend (approved retailers) | ✅ |
@@ -38,23 +40,27 @@ The platform has grown from a simple landing page into a full multi-page communi
 | Matched funding badges | ✅ |
 | Stripe Checkout integration | ✅ Code complete |
 | Wallet Pass API (mock endpoint) | ✅ |
-| Database | ❌ Phase 3 |
-| Admin authentication | ❌ Phase 3 |
-| Real Stripe payments | ❌ Needs keys |
+| Database schema + DB-backed reads | ✅ |
+| Webhook accounting persistence | ✅ |
+| Admin authentication | ✅ |
+| Health/reporting endpoints | ✅ |
+| Real Stripe payments | ⏳ Requires live keys + webhook config in Stripe/Vercel |
 
 ## Next Milestone
 
-**Phase 3: Database & Real Data**
-- Set up Supabase for real data storage
-- Connect Stripe webhook to record live donations
-- Admin authentication with NextAuth.js
-- Replace in-memory sample data with real queries
+**Phase 3 close-out in production + Phase 4 external dependency track**
+- Apply migrations and seed to production Supabase
+- Configure Stripe live webhook and verify end-to-end live event writes
+- Populate external dependency board owners/dates for card-issuer and retailer agreements
+- Complete launch quality gates (tests, accessibility, performance, CI)
 
 ## Immediate Actions Needed
 
-1. **Push to GitHub** — All changes committed and ready
-2. **Stripe test keys** — Add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to Vercel env vars
-3. **Deploy** — Push triggers auto-deploy on Vercel
+1. **Apply Supabase migrations in production** and run `npm run seed:phase2`
+2. **Set `SEED_FALLBACK_ENABLED=false`** in production env after migration verification
+3. **Configure Stripe webhook events** (`checkout.session.completed`, `invoice.paid`)
+4. **Bootstrap admin account** with `npm run bootstrap:admin`
+5. **Run CI gate** (`npm run ci`) before final production release
 
 ## Tech Stack
 
@@ -65,8 +71,8 @@ The platform has grown from a simple landing page into a full multi-page communi
 | Styling | Tailwind CSS v4 | ✅ |
 | Payments | Stripe Checkout | ✅ |
 | Hosting | Vercel (free tier) | ✅ |
-| Database | Supabase (free tier) | ⏳ Phase 3 |
-| Auth | NextAuth.js | ⏳ Phase 3 |
+| Database | Supabase (free tier) | ✅ Implemented in code |
+| Auth | NextAuth.js | ✅ Implemented in code |
 | QR Codes | qrcode (client-side) | ✅ |
 
 ## How to Run Locally

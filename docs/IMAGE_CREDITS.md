@@ -15,3 +15,5 @@ Real photography added to the site uses free Unsplash downloads.
 ## Licence Note
 Unsplash photos are free to use under the Unsplash Licence.
 See: https://unsplash.com/license
+
+For retailer logo attribution, see `docs/LOGO_CREDITS.md`.

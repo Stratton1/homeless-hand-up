@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { getUserBySlug } from "@/lib/users";
 import { APP_CONFIG } from "@/lib/config";
+import { normalizeCompanyName } from "@/lib/company-normalization";
+import { sanitizeSupportMessage } from "@/lib/support-message";
 
 /**
  * POST /api/checkout
@@ -60,6 +62,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const cleanedMessage = sanitizeSupportMessage(message);
+    const normalizedCompanyName =
+      typeof companyName === "string" && companyName.trim().length > 0
+        ? normalizeCompanyName(companyName)
+        : "";
+
     // Gift Aid remains disabled until HMRC/legal onboarding is complete.
     const donationPence = Math.round(amount * 100);
     const serviceChargePence = Math.round(
@@ -81,8 +89,8 @@ export async function POST(request: NextRequest) {
       spendablePence: spendablePence.toString(),
       frequency,
       wishlistItemId: wishlistItemId || "",
-      message: message || "",
-      companyName: companyName || "",
+      message: cleanedMessage,
+      companyName: normalizedCompanyName,
       notifyEmail: notifyEmail ? "true" : "false",
       giftAid: "disabled",
     };
@@ -91,8 +99,8 @@ export async function POST(request: NextRequest) {
     if (wishlistItemId) {
       description += " (wishlist item)";
     }
-    if (companyName) {
-      description += ` (company match: ${companyName})`;
+    if (normalizedCompanyName && normalizedCompanyName !== "Unknown/Other") {
+      description += ` (company match: ${normalizedCompanyName})`;
     }
 
     if (frequency === "monthly") {

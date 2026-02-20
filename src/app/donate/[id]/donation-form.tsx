@@ -354,6 +354,9 @@ export default function DonationForm({
           <div className="text-xs text-brand-gray">
             Get updates about {firstName}'s progress towards their goals
           </div>
+          <div className="text-[11px] text-brand-gray mt-1">
+            We currently store preferences only. Outbound email sends are coming soon.
+          </div>
         </div>
       </label>
 

@@ -2,8 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { AuthError } from "next-auth";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-
-type AdminRole = "super_admin" | "support_worker" | "viewer";
+import { type AdminRole } from "@/lib/admin-rbac";
 
 type AdminUserRow = {
   id: string;
@@ -19,8 +18,10 @@ export class InvalidCredentialsError extends AuthError {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   session: {
     strategy: "jwt",
+    maxAge: 60 * 60 * 8,
   },
   pages: {
     signIn: "/admin/login",

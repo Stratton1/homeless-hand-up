@@ -103,31 +103,39 @@
 
 ---
 
-## Phase 3: Database & Real Data 🔜 NEXT
-**Goal:** Real data storage. Live Stripe payments. Admin authentication.
+## Phase 3: Database & Real Data ✅ CODE COMPLETE / OPS ROLLOUT
+**Goal:** Real data storage, Stripe accounting correctness, and admin authentication.
 
 ### Tasks
-- [ ] Set up Supabase (free tier) with tables: members, donations, transactions, messages
-- [ ] Migrate from in-memory sample data to real database queries
-- [ ] Connect Stripe webhook to database (record donations, update balances, track savings)
-- [ ] Admin authentication (NextAuth.js)
-- [ ] Real-time balance updates after donations
-- [ ] Subscription billing for monthly donors
-- [ ] Store messages of support in database
-- [ ] Track company attributions for leaderboard
+- [x] Supabase schema migrations added for members, donations, support messages, stripe events, admin users, and reporting views
+- [x] Migration path from in-memory sample data to DB queries implemented (`src/lib/users.ts` + seed script)
+- [x] Stripe webhook persistence to DB with idempotency and atomic RPC updates (`apply_donation_event`)
+- [x] Admin authentication with NextAuth credentials against `admin_users`
+- [x] Real-time cache invalidation after donations for public/admin routes
+- [x] Monthly donor subscription handling (`invoice.paid` with `billing_reason='subscription_cycle'`)
+- [x] Support message persistence through checkout metadata + webhook pipeline
+- [x] Company attribution tracking with normalization in code and SQL views
+- [ ] Supabase production project/env rollout and migration application in live environment
+- [ ] Stripe production webhook endpoint + secret configuration verification
 
 ---
 
-## Phase 4: Savings, Partnerships & Growth
-**Goal:** Full savings tracking. Retailer partnerships. Public launch preparation.
+## Phase 4: Savings, Partnerships & Growth 🚧 IN PROGRESS
+**Goal:** Full savings tracking, audit reporting, and partnership readiness.
 
-### Tasks
-- [ ] Savings balance tracked per member in database
-- [ ] Restricted spending card partnership (Monzo/Starling)
-- [ ] Retailer partnership conversations
-- [ ] Transaction reporting and audit trail
-- [ ] Gift Aid reclaim process
-- [ ] Email notifications for milestone updates
+### Engineering Track
+- [x] Savings balances tracked in database and surfaced in admin ledger views
+- [x] Admin transaction reporting and CSV export with reconciliation fields
+- [x] Monthly reconciliation API/reporting endpoint
+- [x] Donor notification queue schema placeholder added (sending still disabled)
+- [x] Gift Aid remains disabled in checkout/UI until legal readiness
+- [x] Supermarket logo assets integrated from GitHub with attribution docs
+
+### External Dependency Track
+- [ ] Restricted spending card partnership (Monzo/Starling/BIN sponsor)
+- [ ] Retailer partnership conversations and signed participation agreements
+- [ ] Gift Aid reclaim process go-live approval (HMRC/legal/finance)
+- [ ] Email provider approval and compliance sign-off for outbound notifications
 
 ---
 
@@ -135,12 +143,12 @@
 **Goal:** Production-ready. Real money. Public launch.
 
 ### Tasks
-- [ ] Accessibility audit (WCAG 2.1 AA)
-- [ ] Performance optimisation (Lighthouse 90+)
-- [ ] Legal pages: privacy policy, terms, cookies
+- [ ] Accessibility manual audit (WCAG 2.1 AA); automated axe critical checks added
+- [ ] Performance optimisation (Lighthouse 90+ on mobile)
+- [x] Legal pages: privacy policy, terms, cookies
 - [ ] Switch Stripe to live mode
-- [ ] SEO: meta tags, Open Graph, sitemap
-- [ ] Cross-browser and cross-device testing
+- [x] SEO baseline: meta tags, Open Graph, sitemap, robots
+- [x] Cross-browser smoke tests (Chromium, Firefox, WebKit)
 - [ ] Launch!
 
 ---

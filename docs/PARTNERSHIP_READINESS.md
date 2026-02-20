@@ -16,3 +16,6 @@
 - Donor email and consent flags are persisted in donations.
 - Outbound notifications are deferred until provider and legal approval.
 - Delivery status: Prepared in data model; sending not enabled.
+
+## Tracking and Ownership
+- External dependency owners, target dates, and unblock criteria are tracked in `docs/EXTERNAL_DEPENDENCIES.md`.

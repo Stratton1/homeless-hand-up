@@ -1,10 +1,19 @@
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
+import AutoRefresh from "@/components/auto-refresh";
 import { getUserBySlug, formatPence } from "@/lib/users";
 import EmergencyButton from "./emergency-button";
 
 export default async function RecipientDashboardPage() {
-  const user = await getUserBySlug("james-manchester");
+  let user;
+  let dataError: string | null = null;
+
+  try {
+    user = await getUserBySlug("james-manchester");
+  } catch (error) {
+    dataError =
+      error instanceof Error ? error.message : "Failed to load dashboard data.";
+  }
 
   if (!user) {
     return (
@@ -18,6 +27,11 @@ export default async function RecipientDashboardPage() {
             <p className="text-brand-gray">
               Could not load recipient dashboard.
             </p>
+            {dataError && (
+              <p className="text-sm text-amber-700 mt-3">
+                Live data temporarily unavailable: {dataError}
+              </p>
+            )}
           </div>
         </div>
         <SiteFooter />
@@ -25,9 +39,12 @@ export default async function RecipientDashboardPage() {
     );
   }
 
+  const spendableBalancePence =
+    user.spendableBalancePence ?? Math.max(user.balancePence - user.savingsPence, 0);
   const progressPercent = Math.round(
-    (user.savingsPence / user.savingsGoalPence) * 100
+    (user.savingsPence / Math.max(user.savingsGoalPence, 1)) * 100
   );
+  const lastUpdatedAt = new Date().toISOString();
 
   // Calculate recent messages (last 3)
   const recentMessages = user.messages.slice(-3).reverse();
@@ -35,6 +52,7 @@ export default async function RecipientDashboardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-brand-cream">
       <SiteHeader />
+      <AutoRefresh intervalMs={20000} />
 
       {/* Hero Section */}
       <section className="pt-32 pb-16 px-4 sm:px-6 relative overflow-hidden">
@@ -65,8 +83,17 @@ export default async function RecipientDashboardPage() {
               <p className="text-blue-800 text-sm">
                 This is a demonstration of the recipient dashboard. In production, recipients would log in securely to view and manage their account, with real-time transaction history and support options.
               </p>
+              <p className="text-blue-800 text-xs mt-2">
+                Last refreshed: {new Date(lastUpdatedAt).toLocaleString("en-GB")}
+              </p>
             </div>
           </div>
+
+          {dataError && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+              Live data is temporarily unavailable. You may be viewing cached content.
+            </div>
+          )}
 
           {/* Balance Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -76,7 +103,7 @@ export default async function RecipientDashboardPage() {
                 💰 Current Balance
               </p>
               <p className="text-4xl font-bold text-brand-warm mb-2">
-                {formatPence(user.balancePence)}
+                {formatPence(spendableBalancePence)}
               </p>
               <p className="text-xs text-brand-gray">
                 Available to spend at partner retailers

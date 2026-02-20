@@ -64,13 +64,13 @@ export default function SiteHeader() {
             {navLinks.map((link) => (
               <div key={link.label} className="relative group">
                 {link.dropdown ? (
-                  <button
-                    type="button"
+                  <Link
+                    href={link.dropdown[0].href}
                     className="px-3 py-2 text-sm font-medium text-brand-dark hover:text-brand-warm transition-colors rounded-md hover:bg-brand-cream flex items-center gap-1"
                   >
                     {link.label}
                     <ChevronDownIcon className="w-4 h-4 transition-transform group-hover:rotate-180" />
-                  </button>
+                  </Link>
                 ) : (
                   <Link
                     href={link.href}

@@ -219,3 +219,61 @@ Route (app)
 - Updated: docs/ROADMAP.md, project_summary.md, build_log.md
 
 **Follow-ups:** Push to GitHub. Deploy to Vercel. Phase 3: Supabase database integration.
+
+---
+
+## 2026-02-20 — Phase 3 Hardening + Phase 4 Engineering Kickoff
+
+**Summary:** Implemented Phase 3 close-out hardening tasks and started Phase 4 engineering track, including GitHub-sourced supermarket logos and reporting/ops endpoints.
+
+**What was done:**
+- Added company normalization utility and support-message sanitisation pipeline.
+- Extended webhook + checkout flow to persist cleaned message/company data.
+- Added `SEED_FALLBACK_ENABLED` runtime flag support for production cutover.
+- Added health endpoint: `GET /api/health/data` for DB/webhook/queue visibility.
+- Added monthly reconciliation API report: `/api/admin/reports/monthly-reconciliation`.
+- Expanded transaction export schema with event ID, net/gross, and normalized company fields.
+- Added migration `202602200002_phase4_hardening.sql`:
+  - `normalize_company_name(...)`
+  - `admin_transaction_ledger_v`
+  - `member_savings_ledger_v`
+  - `monthly_reconciliation_v`
+  - `donor_notification_queue` placeholder table + indexes.
+- Upgraded admin page with:
+  - role checks,
+  - auto-refresh,
+  - last-updated timestamp,
+  - savings ledger section,
+  - monthly reconciliation panel and CSV export link.
+- Upgraded recipient dashboard with auto-refresh, last-updated stamp, and stale-data notice.
+- Replaced supermarket emoji placeholders with real SVG logos sourced from GitHub and hosted locally in `public/logos/retailers`.
+- Added logo sync script (`npm run sync:retailer-logos`) and attribution docs (`docs/LOGO_CREDITS.md`).
+- Added external dependency board doc (`docs/EXTERNAL_DEPENDENCIES.md`) and updated roadmap/project summary status.
+
+**Verification:**
+- `npm run sync:retailer-logos` completed successfully and saved 6 supermarket SVGs.
+- `npm run lint` passed.
+- `npm run test:unit` passed (7 tests).
+- `npm run build -- --webpack` passed.
+- `npx playwright test` passed across Chromium, Firefox, and WebKit (12 tests, including axe critical check).
+
+**Files changed (high impact):**
+- `src/lib/users.ts`
+- `src/app/api/checkout/route.ts`
+- `src/app/api/webhook/route.ts`
+- `src/app/admin/page.tsx`
+- `src/app/where-to-spend/page.tsx`
+- `src/app/api/admin/transactions/export/route.ts`
+- `src/app/api/admin/reports/monthly-reconciliation/route.ts`
+- `src/app/api/health/data/route.ts`
+- `supabase/migrations/202602200002_phase4_hardening.sql`
+- `scripts/sync-retailer-logos.ts`
+- `src/lib/retailer-logos.ts`
+- `src/lib/company-normalization.ts`
+- `src/lib/support-message.ts`
+- `docs/ROADMAP.md`, `docs/LOGO_CREDITS.md`, `docs/EXTERNAL_DEPENDENCIES.md`, `project_summary.md`, `README.md`
+
+**Follow-ups:**
+- Apply Supabase migrations in production and disable seed fallback.
+- Configure Stripe production webhook and validate end-to-end payment/accounting.
+- Complete CI quality gates and launch checklist.

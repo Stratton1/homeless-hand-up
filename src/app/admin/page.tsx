@@ -3,7 +3,15 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
-import { getAllActiveUsers, formatPence, getRecentTransactions } from "@/lib/users";
+import AutoRefresh from "@/components/auto-refresh";
+import { hasRequiredRole, isAdminRole } from "@/lib/admin-rbac";
+import {
+  getAllActiveUsers,
+  formatPence,
+  getMonthlyReconciliation,
+  getRecentTransactions,
+  getSavingsLedger,
+} from "@/lib/users";
 
 async function signOutAction() {
   "use server";
@@ -17,15 +25,36 @@ export default async function AdminPage() {
   }
 
   const role = session.user.role;
-  const canManage = role === "support_worker" || role === "super_admin";
-  const [users, transactions] = await Promise.all([
-    getAllActiveUsers(),
-    getRecentTransactions(25),
-  ]);
+  if (!isAdminRole(role)) {
+    redirect("/admin/login?error=forbidden");
+  }
+
+  const canManage = hasRequiredRole(role, "support_worker");
+  const [users, transactions, savingsLedger, reconciliation, dataError] =
+    await (async () => {
+      try {
+        const result = await Promise.all([
+          getAllActiveUsers(),
+          getRecentTransactions(25),
+          getSavingsLedger(20),
+          getMonthlyReconciliation(6),
+        ]);
+        return [result[0], result[1], result[2], result[3], null] as const;
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load live admin data.";
+        return [[], [], [], [], message] as const;
+      }
+    })();
+
+  const lastUpdatedAt = new Date().toISOString();
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-cream">
       <SiteHeader />
+      <AutoRefresh intervalMs={30000} />
 
       {/* Hero Section */}
       <section className="pt-32 pb-16 px-4 sm:px-6 relative overflow-hidden">
@@ -56,6 +85,9 @@ export default async function AdminPage() {
                 <p className="text-brand-gray text-sm">
                   Signed in as {session.user.email}. Role: <span className="font-semibold">{role.replace("_", " ")}</span>.
                 </p>
+                <p className="text-brand-gray text-xs mt-1">
+                  Last updated: {new Date(lastUpdatedAt).toLocaleString("en-GB")}
+                </p>
                 {!canManage && (
                   <p className="text-amber-700 text-xs mt-2">
                     Viewer role: read-only access is enabled.
@@ -72,6 +104,13 @@ export default async function AdminPage() {
               </button>
             </form>
           </div>
+
+          {dataError && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+              Live data is temporarily unavailable. Showing fallback-safe empty state. Error:{" "}
+              {dataError}
+            </div>
+          )}
 
           {/* Members Table */}
           <div className="bg-white rounded-xl shadow-lg border border-brand-warm/10 overflow-hidden">
@@ -116,7 +155,7 @@ export default async function AdminPage() {
                   <tbody className="divide-y divide-brand-warm/10">
                     {users.map((user) => {
                       const progressPercent = Math.round(
-                        (user.savingsPence / user.savingsGoalPence) * 100
+                        (user.savingsPence / Math.max(user.savingsGoalPence, 1)) * 100
                       );
 
                       return (
@@ -269,12 +308,15 @@ export default async function AdminPage() {
                   <thead className="bg-brand-cream border-b border-brand-warm/10">
                     <tr>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Timestamp</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Event</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Member</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Type</th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Donation</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Net</th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Spendable</th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Savings</th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Fee</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Company</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-warm/10">
@@ -282,6 +324,9 @@ export default async function AdminPage() {
                       <tr key={tx.donationKey} className="hover:bg-brand-cream/40">
                         <td className="px-6 py-3 text-xs text-brand-gray whitespace-nowrap">
                           {new Date(tx.createdAt).toLocaleString("en-GB")}
+                        </td>
+                        <td className="px-6 py-3 text-xs text-brand-gray whitespace-nowrap">
+                          {tx.eventId}
                         </td>
                         <td className="px-6 py-3 text-sm text-brand-dark font-medium">
                           {tx.memberName}
@@ -293,6 +338,9 @@ export default async function AdminPage() {
                           {formatPence(tx.donationPence)}
                         </td>
                         <td className="px-6 py-3 text-right text-sm text-brand-dark">
+                          {formatPence(tx.netToMemberPence)}
+                        </td>
+                        <td className="px-6 py-3 text-right text-sm text-brand-dark">
                           {formatPence(tx.spendablePence)}
                         </td>
                         <td className="px-6 py-3 text-right text-sm text-brand-trust">
@@ -301,12 +349,111 @@ export default async function AdminPage() {
                         <td className="px-6 py-3 text-right text-sm text-brand-gray">
                           {formatPence(tx.platformFeePence)}
                         </td>
+                        <td className="px-6 py-3 text-xs text-brand-gray">
+                          {tx.normalizedCompanyName}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="bg-white rounded-xl shadow-lg border border-brand-warm/10 overflow-hidden">
+              <div className="p-6 border-b border-brand-warm/10 bg-gradient-to-r from-brand-hope/10 to-brand-trust/10">
+                <h2 className="text-xl font-bold text-brand-dark">Savings Ledger</h2>
+                <p className="text-sm text-brand-gray mt-1">
+                  Running savings accumulation by donation event.
+                </p>
+              </div>
+
+              {savingsLedger.length === 0 ? (
+                <div className="p-8 text-center text-brand-gray">
+                  <p>No savings ledger entries yet.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-brand-cream border-b border-brand-warm/10">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Timestamp</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Member</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Frequency</th>
+                        <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Savings</th>
+                        <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Cumulative</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-warm/10">
+                      {savingsLedger.map((entry) => (
+                        <tr key={`${entry.donationKey}-${entry.memberSlug}`} className="hover:bg-brand-cream/40">
+                          <td className="px-6 py-3 text-xs text-brand-gray whitespace-nowrap">
+                            {new Date(entry.createdAt).toLocaleString("en-GB")}
+                          </td>
+                          <td className="px-6 py-3 text-sm text-brand-dark font-medium">
+                            {entry.memberName}
+                          </td>
+                          <td className="px-6 py-3 text-xs text-brand-gray uppercase tracking-wide">
+                            {entry.frequency}
+                          </td>
+                          <td className="px-6 py-3 text-right text-sm text-brand-trust">
+                            {formatPence(entry.savingsPence)}
+                          </td>
+                          <td className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">
+                            {formatPence(entry.cumulativeSavingsPence)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg border border-brand-warm/10 overflow-hidden">
+              <div className="p-6 border-b border-brand-warm/10 bg-gradient-to-r from-brand-trust/10 to-brand-warm/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-brand-dark">Monthly Reconciliation</h2>
+                  <p className="text-sm text-brand-gray mt-1">
+                    Donations, savings, spendable and platform fee totals by month.
+                  </p>
+                </div>
+                <Link
+                  href="/api/admin/reports/monthly-reconciliation?format=csv"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-brand-dark/20 text-brand-dark text-sm font-semibold hover:bg-brand-cream transition-colors"
+                >
+                  Export Monthly CSV
+                </Link>
+              </div>
+
+              {reconciliation.length === 0 ? (
+                <div className="p-8 text-center text-brand-gray">
+                  <p>No reconciliation rows yet.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-brand-warm/10">
+                  {reconciliation.map((month) => (
+                    <div key={month.monthKey} className="p-5 flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-brand-dark">{month.monthKey}</p>
+                        <p className="text-xs text-brand-gray">
+                          {month.donationCount} donations • Savings {formatPence(month.savingsPence)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-brand-dark">
+                          Gross {formatPence(month.grossPaidPence)}
+                        </p>
+                        <p className="text-xs text-brand-gray">
+                          Net to members {formatPence(month.netToMembersPence)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

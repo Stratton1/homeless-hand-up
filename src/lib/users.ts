@@ -1,4 +1,5 @@
 import { getSupabaseAdminClient, hasSupabaseAdminConfig } from "@/lib/supabase/admin";
+import { normalizeCompanyName } from "@/lib/company-normalization";
 import {
   getAllActiveUsers as getSeedUsers,
   getAllLocations as getSeedLocations,
@@ -80,8 +81,51 @@ type MessageRow = {
   created_at: string;
 };
 
+type TransactionLedgerViewRow = {
+  donation_id: string;
+  donation_key: string;
+  source_event_id: string | null;
+  created_at: string;
+  member_slug: string;
+  member_name: string;
+  source: TransactionLedgerItem["source"];
+  frequency: TransactionLedgerItem["frequency"];
+  donation_pence: number;
+  spendable_pence: number;
+  savings_pence: number;
+  platform_fee_pence: number;
+  total_paid_pence: number;
+  net_to_member_pence: number;
+  company_name: string | null;
+  normalized_company_name: string | null;
+};
+
+type SavingsLedgerRow = {
+  donation_key: string;
+  created_at: string;
+  member_slug: string;
+  member_name: string;
+  frequency: SavingsLedgerItem["frequency"];
+  savings_pence: number;
+  cumulative_savings_pence: number;
+};
+
+type MonthlyReconciliationRow = {
+  month_key: string;
+  month_start: string;
+  donation_count: number;
+  donation_pence: number;
+  savings_pence: number;
+  spendable_pence: number;
+  platform_fee_pence: number;
+  gross_paid_pence: number;
+  net_to_members_pence: number;
+};
+
 export interface TransactionLedgerItem {
+  donationId: string;
   donationKey: string;
+  eventId: string;
   createdAt: string;
   memberSlug: string;
   memberName: string;
@@ -91,12 +135,38 @@ export interface TransactionLedgerItem {
   spendablePence: number;
   savingsPence: number;
   platformFeePence: number;
+  netToMemberPence: number;
+  grossPaidPence: number;
   totalPaidPence: number;
   companyName?: string;
+  normalizedCompanyName: string;
+}
+
+export interface SavingsLedgerItem {
+  donationKey: string;
+  createdAt: string;
+  memberSlug: string;
+  memberName: string;
+  frequency: "one-time" | "monthly";
+  savingsPence: number;
+  cumulativeSavingsPence: number;
+}
+
+export interface MonthlyReconciliationItem {
+  monthKey: string;
+  monthStart: string;
+  donationCount: number;
+  donationPence: number;
+  savingsPence: number;
+  spendablePence: number;
+  platformFeePence: number;
+  grossPaidPence: number;
+  netToMembersPence: number;
 }
 
 function useSeedFallback(): boolean {
-  return !hasSupabaseAdminConfig();
+  const fallbackEnabled = process.env.SEED_FALLBACK_ENABLED !== "false";
+  return fallbackEnabled && !hasSupabaseAdminConfig();
 }
 
 function coerceNumber(value: unknown, fallback = 0): number {
@@ -106,6 +176,14 @@ function coerceNumber(value: unknown, fallback = 0): number {
 
 function dateOnly(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
+}
+
+function parseEventIdFromDonationKey(donationKey: string): string {
+  const separatorIndex = donationKey.indexOf(":");
+  if (separatorIndex < 0) {
+    return donationKey;
+  }
+  return donationKey.slice(separatorIndex + 1);
 }
 
 function mapMember(
@@ -412,10 +490,41 @@ export async function getRecentTransactions(limit = 100): Promise<TransactionLed
   }
 
   const supabase = getSupabaseAdminClient();
+  const viewResult = await supabase
+    .from("admin_transaction_ledger_v")
+    .select(
+      "donation_id,donation_key,source_event_id,created_at,member_slug,member_name,source,frequency,donation_pence,spendable_pence,savings_pence,platform_fee_pence,total_paid_pence,net_to_member_pence,company_name,normalized_company_name"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (!viewResult.error) {
+    return ((viewResult.data as TransactionLedgerViewRow[] | null) ?? []).map((row) => ({
+      donationId: row.donation_id,
+      donationKey: row.donation_key,
+      eventId: row.source_event_id || parseEventIdFromDonationKey(row.donation_key),
+      createdAt: row.created_at,
+      memberSlug: row.member_slug,
+      memberName: row.member_name,
+      source: row.source,
+      frequency: row.frequency,
+      donationPence: coerceNumber(row.donation_pence),
+      spendablePence: coerceNumber(row.spendable_pence),
+      savingsPence: coerceNumber(row.savings_pence),
+      platformFeePence: coerceNumber(row.platform_fee_pence),
+      netToMemberPence: coerceNumber(row.net_to_member_pence),
+      grossPaidPence: coerceNumber(row.total_paid_pence),
+      totalPaidPence: coerceNumber(row.total_paid_pence),
+      companyName: row.company_name ?? undefined,
+      normalizedCompanyName:
+        row.normalized_company_name ?? normalizeCompanyName(row.company_name),
+    }));
+  }
+
   const { data, error } = await supabase
     .from("donations")
     .select(
-      "donation_key,created_at,source,frequency,donation_pence,spendable_pence,savings_pence,platform_fee_pence,total_paid_pence,company_name,members(slug,first_name)"
+      "id,donation_key,created_at,source,frequency,donation_pence,spendable_pence,savings_pence,platform_fee_pence,total_paid_pence,company_name,members(slug,first_name)"
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -426,22 +535,94 @@ export async function getRecentTransactions(limit = 100): Promise<TransactionLed
 
   return (data ?? []).map((row: Record<string, unknown>) => {
     const member = (row.members as Record<string, unknown> | null) ?? {};
+    const companyName = row.company_name ? String(row.company_name) : undefined;
+    const donationKey = String(row.donation_key ?? "");
+    const spendablePence = coerceNumber(row.spendable_pence);
+    const savingsPence = coerceNumber(row.savings_pence);
+    const totalPaidPence = coerceNumber(row.total_paid_pence);
 
     return {
-      donationKey: String(row.donation_key ?? ""),
+      donationId: String(row.id ?? ""),
+      donationKey,
+      eventId: parseEventIdFromDonationKey(donationKey),
       createdAt: String(row.created_at ?? ""),
       memberSlug: String(member.slug ?? "unknown"),
       memberName: String(member.first_name ?? "Unknown"),
       source: (String(row.source ?? "checkout_session") as TransactionLedgerItem["source"]),
       frequency: (String(row.frequency ?? "one-time") as TransactionLedgerItem["frequency"]),
       donationPence: coerceNumber(row.donation_pence),
-      spendablePence: coerceNumber(row.spendable_pence),
-      savingsPence: coerceNumber(row.savings_pence),
+      spendablePence,
+      savingsPence,
       platformFeePence: coerceNumber(row.platform_fee_pence),
-      totalPaidPence: coerceNumber(row.total_paid_pence),
-      companyName: row.company_name ? String(row.company_name) : undefined,
+      netToMemberPence: spendablePence + savingsPence,
+      grossPaidPence: totalPaidPence,
+      totalPaidPence,
+      companyName,
+      normalizedCompanyName: normalizeCompanyName(companyName),
     };
   });
+}
+
+export async function getSavingsLedger(limit = 150): Promise<SavingsLedgerItem[]> {
+  if (useSeedFallback()) {
+    return [];
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("member_savings_ledger_v")
+    .select(
+      "donation_key,created_at,member_slug,member_name,frequency,savings_pence,cumulative_savings_pence"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch savings ledger: ${error.message}`);
+  }
+
+  return ((data as SavingsLedgerRow[] | null) ?? []).map((row) => ({
+    donationKey: row.donation_key,
+    createdAt: row.created_at,
+    memberSlug: row.member_slug,
+    memberName: row.member_name,
+    frequency: row.frequency,
+    savingsPence: coerceNumber(row.savings_pence),
+    cumulativeSavingsPence: coerceNumber(row.cumulative_savings_pence),
+  }));
+}
+
+export async function getMonthlyReconciliation(
+  limit = 12
+): Promise<MonthlyReconciliationItem[]> {
+  if (useSeedFallback()) {
+    return [];
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("monthly_reconciliation_v")
+    .select(
+      "month_key,month_start,donation_count,donation_pence,savings_pence,spendable_pence,platform_fee_pence,gross_paid_pence,net_to_members_pence"
+    )
+    .order("month_start", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch reconciliation data: ${error.message}`);
+  }
+
+  return ((data as MonthlyReconciliationRow[] | null) ?? []).map((row) => ({
+    monthKey: row.month_key,
+    monthStart: row.month_start,
+    donationCount: coerceNumber(row.donation_count),
+    donationPence: coerceNumber(row.donation_pence),
+    savingsPence: coerceNumber(row.savings_pence),
+    spendablePence: coerceNumber(row.spendable_pence),
+    platformFeePence: coerceNumber(row.platform_fee_pence),
+    grossPaidPence: coerceNumber(row.gross_paid_pence),
+    netToMembersPence: coerceNumber(row.net_to_members_pence),
+  }));
 }
 
 /** Format pence as pounds string (e.g. 4520 -> "£45.20") */
