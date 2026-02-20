@@ -63,19 +63,22 @@ export default function SiteHeader() {
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
               <div key={link.label} className="relative group">
-                <button
-                  className="px-3 py-2 text-sm font-medium text-brand-dark hover:text-brand-warm transition-colors rounded-md hover:bg-brand-cream flex items-center gap-1"
-                  onClick={() => {
-                    if (link.dropdown) {
-                      setIsHowItWorksOpen(!isHowItWorksOpen);
-                    }
-                  }}
-                >
-                  {link.label}
-                  {link.dropdown && (
+                {link.dropdown ? (
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm font-medium text-brand-dark hover:text-brand-warm transition-colors rounded-md hover:bg-brand-cream flex items-center gap-1"
+                  >
+                    {link.label}
                     <ChevronDownIcon className="w-4 h-4 transition-transform group-hover:rotate-180" />
-                  )}
-                </button>
+                  </button>
+                ) : (
+                  <Link
+                    href={link.href}
+                    className="px-3 py-2 text-sm font-medium text-brand-dark hover:text-brand-warm transition-colors rounded-md hover:bg-brand-cream flex items-center gap-1"
+                  >
+                    {link.label}
+                  </Link>
+                )}
 
                 {/* Dropdown Menu */}
                 {link.dropdown && (
