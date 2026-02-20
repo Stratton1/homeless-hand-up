@@ -83,3 +83,38 @@
 - Updated: package.json (added stripe, qrcode dependencies)
 
 **Follow-ups:** Push to GitHub to auto-deploy. Set up Stripe test keys. Phase 3: database and admin dashboard.
+
+---
+
+## 2026-02-20 — Design Overhaul: Warm Visuals, Navigation & UX Fixes
+
+**Summary:** Comprehensive visual upgrade and navigation fixes based on user feedback. Landing page now includes recipient cards for direct donation access, all pages have warmer design with SVG illustrations, and navigation flows properly between pages.
+
+**Why:** User feedback identified that (1) there was no way to reach donation pages from the landing page, (2) profile pages weren't accessible, and (3) the design felt bland.
+
+**What was done:**
+- Fixed Stripe build error: changed from eager initialization to lazy `getStripe()` pattern so Vercel builds don't crash without API keys
+- Landing page completely rewritten with:
+  - Custom SVG hero illustration (phone with QR code, two people, hearts, coins)
+  - "People who need your help" section with recipient cards linked to /donate/ and /profile/
+  - SVG step illustrations for How It Works
+  - Gradient backgrounds, decorative blur circles, hover animations
+  - "No app needed · No signup required" badge
+  - Mobile "Give Now" button in sticky nav
+  - Footer with navigation links
+- Donation page enhanced: gradient header bar, avatar badge, stats boxes, back-to-profile link, decorative background shapes
+- Profile page enhanced: gradient header with centered avatar, larger stats, QR code section with icon, gradient donate button, shield icon for safeguards
+- Success page enhanced: larger icon with shadow, floating animated hearts, gradient numbered steps, warmer CTAs
+
+**Verification:** Build passes cleanly — all 8 routes compile. No TypeScript errors.
+
+**Files changed:**
+- Updated: src/app/page.tsx (full rewrite)
+- Updated: src/app/donate/[id]/page.tsx (visual upgrade + navigation)
+- Updated: src/app/donate/success/page.tsx (visual upgrade)
+- Updated: src/app/profile/[id]/page.tsx (visual upgrade)
+- Updated: src/lib/stripe.ts (lazy init fix)
+- Updated: src/app/api/checkout/route.ts (getStripe)
+- Updated: src/app/api/webhook/route.ts (getStripe)
+
+**Follow-ups:** Push to GitHub. Set up Stripe test keys on Vercel. Phase 3: database integration.
