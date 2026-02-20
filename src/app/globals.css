@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  /* Homeless Hand Up brand colours */
+  --color-brand-warm: #E8734A;
+  --color-brand-warm-light: #F2A07B;
+  --color-brand-warm-dark: #C55A33;
+  --color-brand-trust: #2D6A8A;
+  --color-brand-trust-light: #4A9BC2;
+  --color-brand-trust-dark: #1E4D66;
+  --color-brand-hope: #F5C563;
+  --color-brand-hope-light: #F8D88E;
+  --color-brand-cream: #FFF8F0;
+  --color-brand-dark: #1A1A2E;
+  --color-brand-gray: #6B7280;
+  --color-brand-light-gray: #F3F4F6;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
