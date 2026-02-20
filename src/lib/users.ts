@@ -1,340 +1,450 @@
-/**
- * Community member data store.
- *
- * MVP: in-memory sample data. This will be replaced with a proper database
- * (Supabase / Vercel Postgres) in Phase 3.
- *
- * Each member has a unique slug used in their donation URL and QR code.
- */
+import { getSupabaseAdminClient, hasSupabaseAdminConfig } from "@/lib/supabase/admin";
+import {
+  getAllActiveUsers as getSeedUsers,
+  getAllLocations as getSeedLocations,
+  getLeaderboard as getSeedLeaderboard,
+  getPlatformStats as getSeedPlatformStats,
+  getUserBySlug as getSeedUserBySlug,
+  getUsersByLocation as getSeedUsersByLocation,
+  isPaydayFriday,
+  retailerPartners,
+  type CommunityMember,
+  type JourneyMilestone,
+  type LeaderboardEntry,
+  type PlatformStats,
+  type RetailerPartner,
+  type SupportMessage,
+  type WishlistItem,
+} from "@/lib/seed/phase2-members";
 
-/** A wishlist item that donors can fund */
-export interface WishlistItem {
+export type {
+  CommunityMember,
+  JourneyMilestone,
+  LeaderboardEntry,
+  PlatformStats,
+  RetailerPartner,
+  SupportMessage,
+  WishlistItem,
+};
+
+export { isPaydayFriday, retailerPartners };
+
+type MemberRow = {
   id: string;
-  label: string;
-  emoji: string;
-  amountPence: number;
-  description: string;
-  category: "food" | "clothing" | "hygiene" | "connectivity" | "transport" | "housing";
-}
+  legacy_id: string | null;
+  slug: string;
+  first_name: string;
+  age: number;
+  bio: string;
+  location: string;
+  area: string;
+  spendable_balance_pence: number;
+  savings_pence: number;
+  lifetime_raised_pence: number;
+  savings_goal_pence: number;
+  savings_goal_description: string;
+  is_active: boolean;
+  created_at: string;
+  background: string;
+  support_worker: string | null;
+  matched_funding_partner: string | null;
+  matched_funding_multiplier: number | null;
+};
 
-/** A message of support from a donor */
-export interface SupportMessage {
-  id: string;
-  message: string;
-  donorName: string;
-  createdAt: string;
-}
-
-/** A milestone in the member's journey */
-export interface JourneyMilestone {
-  date: string;
+type JourneyRow = {
+  member_id: string;
+  event_date: string;
   title: string;
   description: string;
-  type: "start" | "progress" | "goal" | "achievement";
-}
+  type: JourneyMilestone["type"];
+  sort_order: number;
+};
 
-export interface CommunityMember {
-  /** Unique identifier */
+type WishlistRow = {
+  member_id: string;
+  code: string;
+  label: string;
+  emoji: string;
+  amount_pence: number;
+  description: string;
+  category: WishlistItem["category"];
+  is_active: boolean;
+  sort_order: number;
+};
+
+type MessageRow = {
   id: string;
-  /** URL-friendly slug — used in /donate/[id] and QR codes */
-  slug: string;
-  /** Display name (first name only for privacy) */
-  firstName: string;
-  /** Age (for humanising — no full DOB for privacy) */
-  age: number;
-  /** Optional short bio / situation description */
-  bio: string;
-  /** City or area */
-  location: string;
-  /** Borough or specific area within city */
-  area: string;
-  /** Running total of donations received (pence) */
-  balancePence: number;
-  /** Locked savings balance (pence) */
-  savingsPence: number;
-  /** Housing savings goal (pence) — what they're working towards */
-  savingsGoalPence: number;
-  /** A short description of the savings goal */
-  savingsGoalDescription: string;
-  /** Whether the profile is active and accepting donations */
-  active: boolean;
-  /** Date the member was registered */
+  member_id: string;
+  donor_name: string;
+  message: string;
+  created_at: string;
+};
+
+export interface TransactionLedgerItem {
+  donationKey: string;
   createdAt: string;
-  /** Key life circumstances or background */
-  background: string;
-  /** Journey timeline milestones */
-  journey: JourneyMilestone[];
-  /** Wishlist of specific needs donors can fund */
-  wishlist: WishlistItem[];
-  /** Messages of support from donors */
-  messages: SupportMessage[];
-  /** Registered support worker name (if assigned) */
-  supportWorker?: string;
-  /** Company name running matched funding (if any) */
-  matchedFundingPartner?: string;
-  /** Match multiplier (e.g. 1 = pound-for-pound) */
-  matchedFundingMultiplier?: number;
+  memberSlug: string;
+  memberName: string;
+  source: "checkout_session" | "invoice";
+  frequency: "one-time" | "monthly";
+  donationPence: number;
+  spendablePence: number;
+  savingsPence: number;
+  platformFeePence: number;
+  totalPaidPence: number;
+  companyName?: string;
 }
 
-// Default wishlist items available to all members
-const defaultWishlist: WishlistItem[] = [
-  { id: "wl_meal", label: "Hot Meal", emoji: "🍲", amountPence: 500, description: "A warm meal from a local cafe", category: "food" },
-  { id: "wl_coat", label: "Winter Coat", emoji: "🧥", amountPence: 1500, description: "A warm coat for cold nights", category: "clothing" },
-  { id: "wl_phone", label: "Phone Top-up", emoji: "📱", amountPence: 1000, description: "Stay connected with services and family", category: "connectivity" },
-  { id: "wl_hygiene", label: "Hygiene Kit", emoji: "🧴", amountPence: 800, description: "Toiletries, toothbrush, soap, and basics", category: "hygiene" },
-  { id: "wl_bus", label: "Bus Pass", emoji: "🚌", amountPence: 2000, description: "Weekly travel to appointments and interviews", category: "transport" },
-  { id: "wl_groceries", label: "Week's Groceries", emoji: "🛒", amountPence: 2500, description: "A full week of healthy meals", category: "food" },
-];
-
-/**
- * Sample community members for development and demo purposes.
- * In production these come from the database.
- */
-const communityMembers: CommunityMember[] = [
-  {
-    id: "usr_001",
-    slug: "james-manchester",
-    firstName: "James",
-    age: 34,
-    bio: "Sleeping rough in Manchester for 8 months. Trying to get back on my feet and save for a deposit. Used to work in construction before things fell apart.",
-    location: "Manchester",
-    area: "Northern Quarter",
-    balancePence: 4520,
-    savingsPence: 1230,
-    savingsGoalPence: 50000,
-    savingsGoalDescription: "Deposit for a shared flat in Salford",
-    active: true,
-    createdAt: "2026-02-01",
-    background: "Former construction worker. Lost his job after an injury, then lost his rented flat. Has been working with a local housing charity to get back on his feet.",
-    journey: [
-      { date: "2025-06-15", title: "Lost housing", description: "Evicted after falling behind on rent following a workplace injury.", type: "start" },
-      { date: "2025-09-01", title: "Connected with support", description: "Began working with Manchester Shelter Network.", type: "progress" },
-      { date: "2026-02-01", title: "Joined Homeless Hand Up", description: "Registered on the platform with help from his support worker.", type: "progress" },
-      { date: "2026-02-15", title: "First donations received", description: "Community started contributing to his housing fund.", type: "achievement" },
-    ],
-    wishlist: defaultWishlist,
-    messages: [
-      { id: "msg_001", message: "Stay strong James, rooting for you!", donorName: "Anonymous", createdAt: "2026-02-18" },
-      { id: "msg_002", message: "Hope this helps towards your flat. You've got this.", donorName: "Claire", createdAt: "2026-02-16" },
-    ],
-    supportWorker: "Dave (Manchester Shelter Network)",
-    matchedFundingPartner: "Tesco",
-    matchedFundingMultiplier: 1,
-  },
-  {
-    id: "usr_002",
-    slug: "sarah-london",
-    firstName: "Sarah",
-    age: 28,
-    bio: "Lost my home after a relationship breakdown. Staying in a shelter and looking for work. I want to get my own place and rebuild my life.",
-    location: "London",
-    area: "Camden",
-    balancePence: 2100,
-    savingsPence: 780,
-    savingsGoalPence: 80000,
-    savingsGoalDescription: "First month's rent and deposit in zone 3",
-    active: true,
-    createdAt: "2026-02-10",
-    background: "Former retail worker. Fled a difficult relationship and had no family support network in London. Currently in temporary shelter accommodation.",
-    journey: [
-      { date: "2025-11-01", title: "Left home", description: "Left an unsafe living situation with no savings.", type: "start" },
-      { date: "2025-12-10", title: "Found shelter", description: "Secured a place at a women's shelter in Camden.", type: "progress" },
-      { date: "2026-02-10", title: "Joined Homeless Hand Up", description: "Referred by shelter staff.", type: "progress" },
-    ],
-    wishlist: defaultWishlist,
-    messages: [
-      { id: "msg_003", message: "Sending love and strength. Things will get better.", donorName: "Mike", createdAt: "2026-02-14" },
-    ],
-    supportWorker: "Priya (St Mungo's Camden)",
-  },
-  {
-    id: "usr_003",
-    slug: "mark-birmingham",
-    firstName: "Mark",
-    age: 42,
-    bio: "Ex-forces, been on the streets for 2 years. Grateful for any help. Would love to get back into work and find a stable place to live.",
-    location: "Birmingham",
-    area: "City Centre",
-    balancePence: 890,
-    savingsPence: 340,
-    savingsGoalPence: 40000,
-    savingsGoalDescription: "Deposit for supported accommodation",
-    active: true,
-    createdAt: "2026-02-15",
-    background: "Served 12 years in the British Army. Struggled with the transition to civilian life and PTSD. Has been receiving support from a veterans' charity.",
-    journey: [
-      { date: "2024-01-01", title: "Left the forces", description: "Discharged after 12 years of service.", type: "start" },
-      { date: "2024-06-01", title: "Housing difficulties", description: "Temporary accommodation ended. Began sleeping rough.", type: "start" },
-      { date: "2025-09-01", title: "Veterans' support", description: "Connected with a veterans' outreach programme.", type: "progress" },
-      { date: "2026-02-15", title: "Joined Homeless Hand Up", description: "Registered with support from his outreach worker.", type: "progress" },
-    ],
-    wishlist: defaultWishlist,
-    messages: [
-      { id: "msg_004", message: "Thank you for your service, Mark. Wishing you all the best.", donorName: "Anonymous", createdAt: "2026-02-19" },
-    ],
-    supportWorker: "Tony (SSAFA Birmingham)",
-  },
-  {
-    id: "usr_004",
-    slug: "lisa-leeds",
-    firstName: "Lisa",
-    age: 31,
-    bio: "Mum of two. Lost my flat after being made redundant. Kids are with family while I get back on my feet. Every day is a step closer.",
-    location: "Leeds",
-    area: "Headingley",
-    balancePence: 1560,
-    savingsPence: 560,
-    savingsGoalPence: 60000,
-    savingsGoalDescription: "Two-bedroom flat deposit to reunite with my kids",
-    active: true,
-    createdAt: "2026-02-05",
-    background: "Single mother who lost her warehouse job during company restructuring. Children are temporarily with her sister. Determined to provide a home for them again.",
-    journey: [
-      { date: "2025-08-01", title: "Made redundant", description: "Lost her warehouse job during restructuring.", type: "start" },
-      { date: "2025-10-15", title: "Lost tenancy", description: "Unable to keep up with rent payments.", type: "start" },
-      { date: "2026-01-10", title: "Shelter placement", description: "Secured a place at a family support shelter.", type: "progress" },
-      { date: "2026-02-05", title: "Joined Homeless Hand Up", description: "Signed up with help from shelter coordinators.", type: "progress" },
-    ],
-    wishlist: defaultWishlist,
-    messages: [
-      { id: "msg_005", message: "You'll be back with your kids before you know it. Stay strong.", donorName: "Emma", createdAt: "2026-02-17" },
-      { id: "msg_006", message: "Every little helps. Keep going, Lisa.", donorName: "Anonymous", createdAt: "2026-02-12" },
-    ],
-    supportWorker: "Rachel (Simon on the Streets)",
-  },
-  {
-    id: "usr_005",
-    slug: "david-glasgow",
-    firstName: "David",
-    age: 55,
-    bio: "Long-term rough sleeper trying to break the cycle. Recently connected with support services and feeling hopeful for the first time in years.",
-    location: "Glasgow",
-    area: "City Centre",
-    balancePence: 3200,
-    savingsPence: 920,
-    savingsGoalPence: 35000,
-    savingsGoalDescription: "Supported housing placement",
-    active: true,
-    createdAt: "2026-01-20",
-    background: "Has experienced homelessness on and off for over a decade. Recently engaged with addiction recovery services and housing support. Making real progress.",
-    journey: [
-      { date: "2015-01-01", title: "First period of homelessness", description: "Lost housing after a period of personal difficulty.", type: "start" },
-      { date: "2025-06-01", title: "Engaged with recovery", description: "Started working with addiction support services.", type: "progress" },
-      { date: "2025-11-01", title: "Stable progress", description: "Six months sober. Attending regular appointments.", type: "achievement" },
-      { date: "2026-01-20", title: "Joined Homeless Hand Up", description: "Registered by his outreach worker.", type: "progress" },
-    ],
-    wishlist: defaultWishlist,
-    messages: [
-      { id: "msg_007", message: "Incredible progress David. Keep it up!", donorName: "Anonymous", createdAt: "2026-02-10" },
-    ],
-    supportWorker: "Fiona (Glasgow City Mission)",
-    matchedFundingPartner: "Co-op",
-    matchedFundingMultiplier: 1,
-  },
-];
-
-/** Platform-wide aggregated stats */
-export interface PlatformStats {
-  totalProcessedPence: number;
-  totalSavingsPence: number;
-  totalDonations: number;
-  totalMembers: number;
-  platformRevenuePence: number;
-  reinvestedPence: number;
+function useSeedFallback(): boolean {
+  return !hasSupabaseAdminConfig();
 }
 
-/** Get platform-wide stats for the transparency dashboard */
-export function getPlatformStats(): PlatformStats {
-  const members = communityMembers.filter((m) => m.active);
-  const totalProcessedPence = members.reduce((sum, m) => sum + m.balancePence, 0);
-  const totalSavingsPence = members.reduce((sum, m) => sum + m.savingsPence, 0);
+function coerceNumber(value: unknown, fallback = 0): number {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function dateOnly(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 10);
+}
+
+function mapMember(
+  row: MemberRow,
+  journeys: JourneyMilestone[],
+  wishlist: WishlistItem[],
+  messages: SupportMessage[]
+): CommunityMember {
+  const spendable = coerceNumber(row.spendable_balance_pence);
+  const savings = coerceNumber(row.savings_pence);
+  const lifetime = coerceNumber(row.lifetime_raised_pence, spendable + savings);
+
   return {
-    totalProcessedPence,
-    totalSavingsPence,
-    totalDonations: 47, // mock — would come from transactions table
-    totalMembers: members.length,
-    platformRevenuePence: Math.round(totalProcessedPence * 0.15),
-    reinvestedPence: Math.round(totalProcessedPence * 0.15 * 0.6), // 60% reinvested
+    id: row.legacy_id ?? row.id,
+    databaseId: row.id,
+    slug: row.slug,
+    firstName: row.first_name,
+    age: row.age,
+    bio: row.bio,
+    location: row.location,
+    area: row.area,
+    balancePence: lifetime,
+    spendableBalancePence: spendable,
+    savingsPence: savings,
+    savingsGoalPence: coerceNumber(row.savings_goal_pence),
+    savingsGoalDescription: row.savings_goal_description,
+    active: row.is_active,
+    createdAt: dateOnly(row.created_at),
+    background: row.background,
+    journey: journeys,
+    wishlist,
+    messages,
+    supportWorker: row.support_worker ?? undefined,
+    matchedFundingPartner: row.matched_funding_partner ?? undefined,
+    matchedFundingMultiplier: row.matched_funding_multiplier ?? undefined,
   };
 }
 
-/** Retailer partners for the "Where to Spend" page */
-export interface RetailerPartner {
-  name: string;
-  logo: string; // emoji placeholder — real logos in production
-  category: string;
-  description: string;
-}
+async function hydrateMembers(rows: MemberRow[]): Promise<CommunityMember[]> {
+  if (rows.length === 0) {
+    return [];
+  }
 
-export const retailerPartners: RetailerPartner[] = [
-  { name: "Tesco", logo: "🏪", category: "Supermarket", description: "Groceries, toiletries, and household essentials" },
-  { name: "Sainsbury's", logo: "🏪", category: "Supermarket", description: "Food, drink, and everyday items" },
-  { name: "Asda", logo: "🏪", category: "Supermarket", description: "Affordable groceries and clothing" },
-  { name: "Morrisons", logo: "🏪", category: "Supermarket", description: "Fresh food and daily essentials" },
-  { name: "Aldi", logo: "🏪", category: "Supermarket", description: "Budget-friendly groceries" },
-  { name: "Lidl", logo: "🏪", category: "Supermarket", description: "Quality food at low prices" },
-  { name: "Greggs", logo: "☕", category: "Cafe", description: "Hot meals, sandwiches, and warm drinks" },
-  { name: "Boots", logo: "💊", category: "Pharmacy", description: "Medicines, toiletries, and health essentials" },
-  { name: "Primark", logo: "👕", category: "Clothing", description: "Affordable clothing and basics" },
-];
+  const supabase = getSupabaseAdminClient();
+  const memberIds = rows.map((row) => row.id);
 
-/** Corporate giving leaderboard entry */
-export interface LeaderboardEntry {
-  companyName: string;
-  totalDonatedPence: number;
-  donationCount: number;
-  rank: number;
-}
+  const [journeyResult, wishlistResult, messagesResult] = await Promise.all([
+    supabase
+      .from("member_journey")
+      .select("member_id,event_date,title,description,type,sort_order")
+      .in("member_id", memberIds)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("member_wishlist_items")
+      .select("member_id,code,label,emoji,amount_pence,description,category,is_active,sort_order")
+      .in("member_id", memberIds)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("support_messages")
+      .select("id,member_id,donor_name,message,created_at")
+      .in("member_id", memberIds)
+      .order("created_at", { ascending: true }),
+  ]);
 
-export function getLeaderboard(): LeaderboardEntry[] {
-  // Mock leaderboard — would come from database
-  return [
-    { companyName: "Deloitte Manchester", totalDonatedPence: 45000, donationCount: 23, rank: 1 },
-    { companyName: "PwC Birmingham", totalDonatedPence: 32000, donationCount: 18, rank: 2 },
-    { companyName: "BBC Media City", totalDonatedPence: 28500, donationCount: 15, rank: 3 },
-    { companyName: "NatWest Group", totalDonatedPence: 21000, donationCount: 12, rank: 4 },
-    { companyName: "Rolls-Royce Derby", totalDonatedPence: 18000, donationCount: 9, rank: 5 },
-  ];
-}
+  if (journeyResult.error) {
+    throw journeyResult.error;
+  }
+  if (wishlistResult.error) {
+    throw wishlistResult.error;
+  }
+  if (messagesResult.error) {
+    throw messagesResult.error;
+  }
 
-/** Look up a member by their URL slug */
-export function getUserBySlug(slug: string): CommunityMember | undefined {
-  return communityMembers.find((u) => u.slug === slug);
-}
+  const journeyByMember = new Map<string, JourneyMilestone[]>();
+  for (const row of (journeyResult.data as JourneyRow[]) ?? []) {
+    const list = journeyByMember.get(row.member_id) ?? [];
+    list.push({
+      date: row.event_date,
+      title: row.title,
+      description: row.description,
+      type: row.type,
+    });
+    journeyByMember.set(row.member_id, list);
+  }
 
-/** Look up a member by their ID */
-export function getUserById(id: string): CommunityMember | undefined {
-  return communityMembers.find((u) => u.id === id);
-}
+  const wishlistByMember = new Map<string, WishlistItem[]>();
+  for (const row of (wishlistResult.data as WishlistRow[]) ?? []) {
+    const list = wishlistByMember.get(row.member_id) ?? [];
+    list.push({
+      id: row.code,
+      label: row.label,
+      emoji: row.emoji,
+      amountPence: coerceNumber(row.amount_pence),
+      description: row.description,
+      category: row.category,
+    });
+    wishlistByMember.set(row.member_id, list);
+  }
 
-/** Get all active community members */
-export function getAllActiveUsers(): CommunityMember[] {
-  return communityMembers.filter((u) => u.active);
-}
+  const messagesByMember = new Map<string, SupportMessage[]>();
+  for (const row of (messagesResult.data as MessageRow[]) ?? []) {
+    const list = messagesByMember.get(row.member_id) ?? [];
+    list.push({
+      id: row.id,
+      donorName: row.donor_name || "Anonymous",
+      message: row.message,
+      createdAt: dateOnly(row.created_at),
+    });
+    messagesByMember.set(row.member_id, list);
+  }
 
-/** Get members filtered by location */
-export function getUsersByLocation(location: string): CommunityMember[] {
-  return communityMembers.filter(
-    (u) => u.active && u.location.toLowerCase() === location.toLowerCase()
+  return rows.map((row) =>
+    mapMember(
+      row,
+      journeyByMember.get(row.id) ?? [],
+      wishlistByMember.get(row.id) ?? [],
+      messagesByMember.get(row.id) ?? []
+    )
   );
 }
 
-/** Get all unique locations */
-export function getAllLocations(): string[] {
-  const locations = communityMembers.filter((u) => u.active).map((u) => u.location);
-  return [...new Set(locations)].sort();
+async function getMemberRows(
+  queryBuilder: () => Promise<{ data: MemberRow[] | null; error: { message: string } | null }>
+): Promise<CommunityMember[]> {
+  if (useSeedFallback()) {
+    return getSeedUsers();
+  }
+
+  const result = await queryBuilder();
+  if (result.error) {
+    throw new Error(`Failed to fetch members: ${result.error.message}`);
+  }
+
+  return hydrateMembers(result.data ?? []);
 }
 
-/** Format pence as pounds string (e.g. 4520 → "£45.20") */
+export async function getAllActiveUsers(): Promise<CommunityMember[]> {
+  if (useSeedFallback()) {
+    return getSeedUsers();
+  }
+
+  const supabase = getSupabaseAdminClient();
+  return getMemberRows(async () =>
+    supabase
+      .from("members")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
+  );
+}
+
+export async function getUserBySlug(slug: string): Promise<CommunityMember | undefined> {
+  if (useSeedFallback()) {
+    return getSeedUserBySlug(slug);
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("members")
+    .select("*")
+    .eq("slug", slug)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch member by slug: ${error.message}`);
+  }
+
+  if (!data) {
+    return undefined;
+  }
+
+  const members = await hydrateMembers([data as MemberRow]);
+  return members[0];
+}
+
+export async function getUsersByLocation(location: string): Promise<CommunityMember[]> {
+  if (useSeedFallback()) {
+    return getSeedUsersByLocation(location);
+  }
+
+  const supabase = getSupabaseAdminClient();
+  return getMemberRows(async () =>
+    supabase
+      .from("members")
+      .select("*")
+      .eq("is_active", true)
+      .ilike("location", location)
+      .order("created_at", { ascending: true })
+  );
+}
+
+export async function getAllLocations(): Promise<string[]> {
+  if (useSeedFallback()) {
+    return getSeedLocations();
+  }
+
+  const users = await getAllActiveUsers();
+  return [...new Set(users.map((user) => user.location))].sort();
+}
+
+export async function getPlatformStats(): Promise<PlatformStats> {
+  if (useSeedFallback()) {
+    return getSeedPlatformStats();
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const viewResult = await supabase
+    .from("platform_stats_v")
+    .select("*")
+    .limit(1)
+    .maybeSingle();
+
+  if (!viewResult.error && viewResult.data) {
+    const row = viewResult.data as Record<string, unknown>;
+    return {
+      totalProcessedPence: coerceNumber(row.total_processed_pence),
+      totalSavingsPence: coerceNumber(row.total_savings_pence),
+      totalDonations: coerceNumber(row.total_donations),
+      totalMembers: coerceNumber(row.total_members),
+      platformRevenuePence: coerceNumber(row.platform_revenue_pence),
+      reinvestedPence: coerceNumber(row.reinvested_pence),
+    };
+  }
+
+  const [members, donationsCount] = await Promise.all([
+    getAllActiveUsers(),
+    supabase.from("donations").select("id", { count: "exact", head: true }),
+  ]);
+
+  const totalProcessedPence = members.reduce((sum, member) => sum + member.balancePence, 0);
+  const totalSavingsPence = members.reduce((sum, member) => sum + member.savingsPence, 0);
+
+  return {
+    totalProcessedPence,
+    totalSavingsPence,
+    totalDonations: donationsCount.count ?? 0,
+    totalMembers: members.length,
+    platformRevenuePence: Math.round(totalProcessedPence * 0.15),
+    reinvestedPence: Math.round(totalProcessedPence * 0.15 * 0.6),
+  };
+}
+
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  if (useSeedFallback()) {
+    return getSeedLeaderboard();
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const viewResult = await supabase
+    .from("company_leaderboard_v")
+    .select("company_name,total_donated_pence,donation_count,rank")
+    .order("rank", { ascending: true });
+
+  if (viewResult.error) {
+    return getSeedLeaderboard();
+  }
+
+  return (viewResult.data ?? []).map((row: Record<string, unknown>) => ({
+    companyName: String(row.company_name ?? "Unknown"),
+    totalDonatedPence: coerceNumber(row.total_donated_pence),
+    donationCount: coerceNumber(row.donation_count),
+    rank: coerceNumber(row.rank),
+  }));
+}
+
+export async function getMonthlyGrowth(): Promise<
+  { month: string; raisedPence: number; savingsPence: number; memberCount: number }[]
+> {
+  if (useSeedFallback()) {
+    return [
+      { month: "January", raisedPence: 850000, savingsPence: 85000, memberCount: 2 },
+      { month: "February", raisedPence: 1230000, savingsPence: 123000, memberCount: 5 },
+      { month: "March", raisedPence: 1568000, savingsPence: 156800, memberCount: 8 },
+      { month: "April", raisedPence: 1892000, savingsPence: 189200, memberCount: 10 },
+      { month: "May", raisedPence: 2215000, savingsPence: 221500, memberCount: 12 },
+      { month: "June", raisedPence: 2678000, savingsPence: 267800, memberCount: 15 },
+    ];
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("monthly_growth_v")
+    .select("month_label,raised_pence,savings_pence,member_count")
+    .order("month_start", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch monthly growth: ${error.message}`);
+  }
+
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    month: String(row.month_label ?? "Unknown"),
+    raisedPence: coerceNumber(row.raised_pence),
+    savingsPence: coerceNumber(row.savings_pence),
+    memberCount: coerceNumber(row.member_count),
+  }));
+}
+
+export async function getRecentTransactions(limit = 100): Promise<TransactionLedgerItem[]> {
+  if (useSeedFallback()) {
+    return [];
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("donations")
+    .select(
+      "donation_key,created_at,source,frequency,donation_pence,spendable_pence,savings_pence,platform_fee_pence,total_paid_pence,company_name,members(slug,first_name)"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch transaction ledger: ${error.message}`);
+  }
+
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const member = (row.members as Record<string, unknown> | null) ?? {};
+
+    return {
+      donationKey: String(row.donation_key ?? ""),
+      createdAt: String(row.created_at ?? ""),
+      memberSlug: String(member.slug ?? "unknown"),
+      memberName: String(member.first_name ?? "Unknown"),
+      source: (String(row.source ?? "checkout_session") as TransactionLedgerItem["source"]),
+      frequency: (String(row.frequency ?? "one-time") as TransactionLedgerItem["frequency"]),
+      donationPence: coerceNumber(row.donation_pence),
+      spendablePence: coerceNumber(row.spendable_pence),
+      savingsPence: coerceNumber(row.savings_pence),
+      platformFeePence: coerceNumber(row.platform_fee_pence),
+      totalPaidPence: coerceNumber(row.total_paid_pence),
+      companyName: row.company_name ? String(row.company_name) : undefined,
+    };
+  });
+}
+
+/** Format pence as pounds string (e.g. 4520 -> "£45.20") */
 export function formatPence(pence: number): string {
   return `£${(pence / 100).toFixed(2)}`;
-}
-
-/** Check if today is Payday Friday (last Friday of the month) */
-export function isPaydayFriday(): boolean {
-  const today = new Date();
-  if (today.getDay() !== 5) return false; // Not a Friday
-  const nextWeek = new Date(today);
-  nextWeek.setDate(today.getDate() + 7);
-  return nextWeek.getMonth() !== today.getMonth(); // Next Friday is in a different month
 }

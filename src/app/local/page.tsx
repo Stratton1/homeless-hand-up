@@ -1,10 +1,13 @@
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import LocalFinder from "./local-finder";
-import { getAllLocations } from "@/lib/users";
+import { getAllActiveUsers, getAllLocations } from "@/lib/users";
 
-export default function LocalPage() {
-  const locations = getAllLocations();
+export default async function LocalPage() {
+  const [locations, members] = await Promise.all([
+    getAllLocations(),
+    getAllActiveUsers(),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-cream">
@@ -31,7 +34,7 @@ export default function LocalPage() {
       {/* Local Finder Section */}
       <section className="flex-1 py-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <LocalFinder locations={locations} />
+          <LocalFinder locations={locations} members={members} />
         </div>
       </section>
 

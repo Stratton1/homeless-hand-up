@@ -1,9 +1,27 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth, signOut } from "@/auth";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
-import { getAllActiveUsers, formatPence } from "@/lib/users";
+import { getAllActiveUsers, formatPence, getRecentTransactions } from "@/lib/users";
 
-export default function AdminPage() {
-  const users = getAllActiveUsers();
+async function signOutAction() {
+  "use server";
+  await signOut({ redirectTo: "/admin/login" });
+}
+
+export default async function AdminPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/admin/login");
+  }
+
+  const role = session.user.role;
+  const canManage = role === "support_worker" || role === "super_admin";
+  const [users, transactions] = await Promise.all([
+    getAllActiveUsers(),
+    getRecentTransactions(25),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-cream">
@@ -30,15 +48,29 @@ export default function AdminPage() {
       {/* Main Content */}
       <section className="flex-1 py-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* Demo Banner */}
-          <div className="bg-gradient-to-r from-brand-warm/20 to-brand-warm-dark/20 border-2 border-brand-warm/30 rounded-xl p-6 flex items-start gap-4">
-            <div className="text-3xl">📋</div>
-            <div>
-              <h2 className="font-bold text-brand-dark mb-1">Demo View</h2>
-              <p className="text-brand-gray text-sm">
-                This is a demonstration of the support worker portal. In production, this would connect to a secure admin dashboard with authentication, real-time updates, and full member management capabilities.
-              </p>
+          <div className="bg-gradient-to-r from-brand-trust/20 to-brand-warm/20 border-2 border-brand-trust/30 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="text-3xl">🔐</div>
+              <div>
+                <h2 className="font-bold text-brand-dark mb-1">Authenticated Admin Session</h2>
+                <p className="text-brand-gray text-sm">
+                  Signed in as {session.user.email}. Role: <span className="font-semibold">{role.replace("_", " ")}</span>.
+                </p>
+                {!canManage && (
+                  <p className="text-amber-700 text-xs mt-2">
+                    Viewer role: read-only access is enabled.
+                  </p>
+                )}
+              </div>
             </div>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-brand-dark/20 text-brand-dark text-sm font-semibold hover:bg-white transition-colors"
+              >
+                Sign Out
+              </button>
+            </form>
           </div>
 
           {/* Members Table */}
@@ -82,7 +114,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-warm/10">
-                    {users.map((user, index) => {
+                    {users.map((user) => {
                       const progressPercent = Math.round(
                         (user.savingsPence / user.savingsGoalPence) * 100
                       );
@@ -204,6 +236,77 @@ export default function AdminPage() {
                 {users.filter((u) => u.supportWorker).length}
               </p>
             </div>
+          </div>
+
+          {/* Transaction Ledger */}
+          <div className="bg-white rounded-xl shadow-lg border border-brand-warm/10 overflow-hidden">
+            <div className="p-6 border-b border-brand-warm/10 bg-gradient-to-r from-brand-trust/5 to-brand-warm/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-brand-dark">Transaction Ledger</h2>
+                <p className="text-sm text-brand-gray mt-1">
+                  Latest donation events (one-time and recurring) for audit and reconciliation.
+                </p>
+              </div>
+              {canManage ? (
+                <Link
+                  href="/api/admin/transactions/export"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-brand-dark text-white text-sm font-semibold hover:bg-brand-dark/90 transition-colors"
+                >
+                  Export CSV
+                </Link>
+              ) : (
+                <span className="text-xs text-brand-gray">CSV export available to support worker/super admin roles.</span>
+              )}
+            </div>
+
+            {transactions.length === 0 ? (
+              <div className="p-8 text-center text-brand-gray">
+                <p>No transactions recorded yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-brand-cream border-b border-brand-warm/10">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Timestamp</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Member</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-brand-dark">Type</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Donation</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Spendable</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Savings</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">Fee</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-warm/10">
+                    {transactions.map((tx) => (
+                      <tr key={tx.donationKey} className="hover:bg-brand-cream/40">
+                        <td className="px-6 py-3 text-xs text-brand-gray whitespace-nowrap">
+                          {new Date(tx.createdAt).toLocaleString("en-GB")}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-brand-dark font-medium">
+                          {tx.memberName}
+                        </td>
+                        <td className="px-6 py-3 text-xs text-brand-gray uppercase tracking-wide">
+                          {tx.source.replace("_", " ")} · {tx.frequency}
+                        </td>
+                        <td className="px-6 py-3 text-right text-sm font-semibold text-brand-dark">
+                          {formatPence(tx.donationPence)}
+                        </td>
+                        <td className="px-6 py-3 text-right text-sm text-brand-dark">
+                          {formatPence(tx.spendablePence)}
+                        </td>
+                        <td className="px-6 py-3 text-right text-sm text-brand-trust">
+                          {formatPence(tx.savingsPence)}
+                        </td>
+                        <td className="px-6 py-3 text-right text-sm text-brand-gray">
+                          {formatPence(tx.platformFeePence)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </section>

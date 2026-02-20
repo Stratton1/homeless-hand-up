@@ -3,9 +3,12 @@ import { getAllActiveUsers, getPlatformStats, formatPence, isPaydayFriday } from
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 
-export default function Home() {
-  const communityMembers = getAllActiveUsers().slice(0, 3);
-  const stats = getPlatformStats();
+export default async function Home() {
+  const [allCommunityMembers, stats] = await Promise.all([
+    getAllActiveUsers(),
+    getPlatformStats(),
+  ]);
+  const communityMembers = allCommunityMembers.slice(0, 3);
   const isPayday = isPaydayFriday();
 
   return (

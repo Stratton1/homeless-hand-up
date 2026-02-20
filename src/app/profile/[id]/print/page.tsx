@@ -1,25 +1,27 @@
 import { getUserBySlug } from "@/lib/users";
 import { APP_CONFIG } from "@/lib/config";
 import QRCodeDisplay from "../qr-code-display";
+import type { CommunityMember } from "@/lib/users";
 
 interface PrintPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function PrintPage({ params }: PrintPageProps) {
-  const user = getUserBySlug(params.id);
+export default async function PrintPage({ params }: PrintPageProps) {
+  const { id } = await params;
+  const user = await getUserBySlug(id);
 
   if (!user) {
     return (
       <div className="p-8 text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">User Not Found</h1>
-        <p className="text-gray-600">
-          Could not find a community member with the ID: {params.id}
-        </p>
-      </div>
-    );
+          <h1 className="text-2xl font-bold text-red-600 mb-4">User Not Found</h1>
+          <p className="text-gray-600">
+            Could not find a community member with the ID: {id}
+          </p>
+        </div>
+      );
   }
 
   const donateUrl = `${APP_CONFIG.appUrl}/donate/${user.slug}`;
@@ -78,7 +80,7 @@ export default function PrintPage({ params }: PrintPageProps) {
 }
 
 interface BadgeContentProps {
-  user: any;
+  user: CommunityMember;
   donateUrl: string;
 }
 

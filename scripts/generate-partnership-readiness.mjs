@@ -1,0 +1,6 @@
+import fs from "node:fs/promises";
+
+const content = `# Partnership Readiness Artifacts\n\n## Card-Issuer Integration Requirements (External Dependency)\n- Partner capability: merchant category controls + restricted spend profiles.\n- Required APIs: card issuance, balance controls, transaction webhooks, freeze/unfreeze.\n- Compliance checks: KYC/AML ownership, safeguarding model, PCI scope confirmation.\n- Delivery status: **External dependency, not yet integrated in code.**\n\n## Retailer Data Export Contract (External Dependency)\n- Export formats: CSV and JSON (daily batch + optional webhook feed).\n- Mandatory fields: donation ID, anonymised recipient ID, spend category, timestamp, amount.\n- Privacy controls: pseudonymisation and retention windows per UK policy.\n- Delivery status: **External dependency, not yet integrated in code.**\n\n## Email Updates Readiness\n- Donor email + consent flags now persisted in donations.\n- Outbound notifications are deferred until provider and legal approval.\n- Delivery status: **Prepared in data model; sending not enabled.**\n`;
+
+await fs.writeFile("docs/PARTNERSHIP_READINESS.md", content, "utf8");
+console.log("Generated docs/PARTNERSHIP_READINESS.md");

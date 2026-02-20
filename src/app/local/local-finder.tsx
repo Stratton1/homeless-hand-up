@@ -2,19 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  getUsersByLocation,
-  formatPence,
-  type CommunityMember,
-} from "@/lib/users";
+import { formatPence, type CommunityMember } from "@/lib/users";
 
 interface LocalFinderProps {
   locations: string[];
+  members: CommunityMember[];
 }
 
-export default function LocalFinder({ locations }: LocalFinderProps) {
+export default function LocalFinder({ locations, members }: LocalFinderProps) {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const members = selectedCity ? getUsersByLocation(selectedCity) : [];
+  const filteredMembers = selectedCity
+    ? members.filter((member) => member.location === selectedCity)
+    : [];
 
   return (
     <div className="space-y-12">
@@ -53,7 +52,7 @@ export default function LocalFinder({ locations }: LocalFinderProps) {
             Community Members in {selectedCity}
           </h2>
 
-          {members.length === 0 ? (
+          {filteredMembers.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border-2 border-brand-warm/20">
               <p className="text-brand-gray">
                 No community members currently in {selectedCity}.
@@ -61,7 +60,7 @@ export default function LocalFinder({ locations }: LocalFinderProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {members.map((member: CommunityMember) => (
+              {filteredMembers.map((member: CommunityMember) => (
                 <div
                   key={member.id}
                   className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-brand-warm/10"

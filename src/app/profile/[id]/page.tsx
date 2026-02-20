@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getUserBySlug, formatPence, type CommunityMember } from "@/lib/users";
+import { getUserBySlug, formatPence } from "@/lib/users";
 import { APP_CONFIG } from "@/lib/config";
 import QRCodeDisplay from "./qr-code-display";
 import Link from "next/link";
@@ -19,7 +19,7 @@ interface ProfilePageProps {
  */
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { id } = await params;
-  const user = getUserBySlug(id);
+  const user = await getUserBySlug(id);
 
   if (!user || !user.active) {
     notFound();

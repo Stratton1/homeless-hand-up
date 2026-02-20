@@ -1,0 +1,22 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8F0" />
+      <stop offset="1" stop-color="#F6EFE6" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#E8734A" />
+      <stop offset="1" stop-color="#C55A33" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1030" cy="120" r="180" fill="#2D6A8A" fill-opacity="0.08" />
+  <circle cx="140" cy="560" r="220" fill="#E8734A" fill-opacity="0.12" />
+  <rect x="94" y="102" width="96" height="96" rx="48" fill="url(#accent)" />
+  <path d="M142.318 131.318C148.177 125.46 157.823 125.46 163.682 131.318L166 133.636L168.318 131.318C174.177 125.46 183.823 125.46 189.682 131.318C195.54 137.177 195.54 146.823 189.682 152.682L166 176.364L142.318 152.682C136.46 146.823 136.46 137.177 142.318 131.318Z" fill="white" />
+  <text x="220" y="158" fill="#1A1A2E" font-family="'Segoe UI', Arial, sans-serif" font-size="54" font-weight="700">Homeless Hand Up</text>
+  <text x="220" y="236" fill="#4C5A67" font-family="'Segoe UI', Arial, sans-serif" font-size="38" font-weight="500">Give directly. Change lives.</text>
+  <text x="96" y="340" fill="#4C5A67" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="400">Contactless giving with safeguards and housing savings.</text>
+  <rect x="96" y="404" width="412" height="74" rx="37" fill="url(#accent)" />
+  <text x="302" y="451" text-anchor="middle" fill="white" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="700">homeless-hand-up.vercel.app</text>
+</svg>

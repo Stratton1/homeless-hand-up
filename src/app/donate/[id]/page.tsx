@@ -10,7 +10,7 @@ interface DonatePageProps {
 
 export default async function DonatePage({ params }: DonatePageProps) {
   const { id } = await params;
-  const user = getUserBySlug(id);
+  const user = await getUserBySlug(id);
 
   if (!user || !user.active) {
     notFound();

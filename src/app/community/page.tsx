@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { getAllActiveUsers, getAllLocations, getUsersByLocation } from "@/lib/users";
+import { getAllActiveUsers, getAllLocations } from "@/lib/users";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import CommunityGrid from "./community-grid";
 
-export default function CommunityPage() {
-  const allUsers = getAllActiveUsers();
-  const locations = getAllLocations();
+export default async function CommunityPage() {
+  const [allUsers, locations] = await Promise.all([
+    getAllActiveUsers(),
+    getAllLocations(),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-cream">

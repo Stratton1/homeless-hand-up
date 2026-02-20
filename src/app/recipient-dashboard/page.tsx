@@ -3,8 +3,8 @@ import SiteFooter from "@/components/site-footer";
 import { getUserBySlug, formatPence } from "@/lib/users";
 import EmergencyButton from "./emergency-button";
 
-export default function RecipientDashboardPage() {
-  const user = getUserBySlug("james-manchester");
+export default async function RecipientDashboardPage() {
+  const user = await getUserBySlug("james-manchester");
 
   if (!user) {
     return (

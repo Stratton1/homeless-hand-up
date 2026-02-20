@@ -94,26 +94,42 @@ export default function SiteFooter() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="/donate"
+                  href="/local"
                   className="text-brand-light-gray hover:text-brand-warm transition-colors duration-200"
                 >
-                  Donate
+                  Find Near Me
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/become-support-worker"
+                  href="/leaderboard"
                   className="text-brand-light-gray hover:text-brand-warm transition-colors duration-200"
                 >
-                  Become a Support Worker
+                  Corporate Leaderboard
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/partner-with-us"
+                  href="/privacy"
                   className="text-brand-light-gray hover:text-brand-warm transition-colors duration-200"
                 >
-                  Partner With Us
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  className="text-brand-light-gray hover:text-brand-warm transition-colors duration-200"
+                >
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/cookies"
+                  className="text-brand-light-gray hover:text-brand-warm transition-colors duration-200"
+                >
+                  Cookie Policy
                 </Link>
               </li>
               <li>

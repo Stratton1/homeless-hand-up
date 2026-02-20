@@ -1,19 +1,12 @@
-import { getPlatformStats, formatPence } from "@/lib/users";
+import { getMonthlyGrowth, getPlatformStats, formatPence } from "@/lib/users";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 
-export default function TransparencyPage() {
-  const stats = getPlatformStats();
-
-  // Mock monthly data for the snapshot section
-  const monthlyData = [
-    { month: "January", raised: 8500, savings: 850, members: 2 },
-    { month: "February", raised: 12300, savings: 1230, members: 5 },
-    { month: "March", raised: 15680, savings: 1568, members: 8 },
-    { month: "April", raised: 18920, savings: 1892, members: 10 },
-    { month: "May", raised: 22150, savings: 2215, members: 12 },
-    { month: "June", raised: 26780, savings: 2678, members: 15 },
-  ];
+export default async function TransparencyPage() {
+  const [stats, monthlyData] = await Promise.all([
+    getPlatformStats(),
+    getMonthlyGrowth(),
+  ]);
 
   // Calculate operational breakdown
   const operationalPercent = 15; // 15% service charge
@@ -333,7 +326,7 @@ export default function TransparencyPage() {
                       Raised
                     </div>
                     <div className="text-lg font-bold text-brand-warm">
-                      {formatPence(month.raised)}
+                      {formatPence(month.raisedPence)}
                     </div>
                   </div>
                   <div>
@@ -341,14 +334,14 @@ export default function TransparencyPage() {
                       Saved
                     </div>
                     <div className="text-lg font-bold text-brand-trust">
-                      {formatPence(month.savings)}
+                      {formatPence(month.savingsPence)}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-brand-gray uppercase tracking-wide mb-1">
                       Members
                     </div>
-                    <div className="text-lg font-bold text-brand-dark">{month.members}</div>
+                    <div className="text-lg font-bold text-brand-dark">{month.memberCount}</div>
                   </div>
                 </div>
               </div>

@@ -1,0 +1,27 @@
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+let cachedClient: SupabaseClient | null = null;
+
+/**
+ * Server-side Supabase client using the public anon key.
+ * Returns null when env vars are missing so callers can gracefully fallback.
+ */
+export function getSupabaseServerClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    return null;
+  }
+
+  if (!cachedClient) {
+    cachedClient = createClient(url, anonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  return cachedClient;
+}

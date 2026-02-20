@@ -44,7 +44,6 @@ export default function DonationForm({
   const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [companyName, setCompanyName] = useState("No");
-  const [giftAid, setGiftAid] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -57,13 +56,11 @@ export default function DonationForm({
       : selectedAmount ?? 0;
 
   // Calculate charges and breakdown
-  const giftAidMultiplier = giftAid ? 1.25 : 1;
-  const donationAfterGiftAid = donationAmount * giftAidMultiplier;
-  const serviceCharge = donationAfterGiftAid * (serviceChargePercentage / 100);
-  const totalCharge = donationAfterGiftAid + serviceCharge;
-  const operationalContribution = donationAfterGiftAid * (serviceChargePercentage / 100);
-  const housingContribution = donationAfterGiftAid * (savingsPercentage / 100);
-  const amountToRecipient = donationAfterGiftAid - housingContribution;
+  const serviceCharge = donationAmount * (serviceChargePercentage / 100);
+  const totalCharge = donationAmount + serviceCharge;
+  const operationalContribution = donationAmount * (serviceChargePercentage / 100);
+  const housingContribution = donationAmount * (savingsPercentage / 100);
+  const amountToRecipient = donationAmount - housingContribution;
 
   const isValid =
     donationAmount >= minimumDonation && donationAmount <= maximumDonation;
@@ -85,7 +82,6 @@ export default function DonationForm({
           wishlistItemId: selectedWishlistId || undefined,
           message: message || undefined,
           companyName: companyName !== "No" ? companyName : undefined,
-          giftAid,
           notifyEmail: notifyEmail ? true : undefined,
         }),
       });
@@ -279,23 +275,20 @@ export default function DonationForm({
         </select>
       </div>
 
-      {/* Gift Aid checkbox */}
-      <label className="flex items-start gap-3 p-3 bg-brand-trust/5 rounded-xl cursor-pointer hover:bg-brand-trust/10 transition-colors">
-        <input
-          type="checkbox"
-          checked={giftAid}
-          onChange={(e) => setGiftAid(e.target.checked)}
-          className="mt-1 w-4 h-4 accent-brand-trust rounded"
-        />
+      {/* Gift Aid policy note */}
+      <div className="flex items-start gap-3 p-3 bg-brand-trust/5 rounded-xl border border-brand-trust/10">
+        <svg className="w-4 h-4 text-brand-trust mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 6a9 9 0 100 18 9 9 0 000-18z" />
+        </svg>
         <div>
           <div className="text-sm font-medium text-brand-dark">
-            I am a UK taxpayer
+            Gift Aid temporarily unavailable
           </div>
           <div className="text-xs text-brand-gray">
-            Add Gift Aid to increase your donation by 25% at no extra cost
+            Gift Aid will be enabled after HMRC and legal registration is complete.
           </div>
         </div>
-      </label>
+      </div>
 
       {/* Breakdown display */}
       {donationAmount > 0 && (
@@ -312,16 +305,6 @@ export default function DonationForm({
                 £{donationAmount.toFixed(2)}
               </span>
             </div>
-            {giftAid && (
-              <div className="flex justify-between">
-                <span className="text-brand-gray">
-                  Gift Aid (25%)
-                </span>
-                <span className="font-semibold text-brand-trust">
-                  +£{(donationAfterGiftAid - donationAmount).toFixed(2)}
-                </span>
-              </div>
-            )}
             <div className="border-t border-brand-warm/20 pt-2 mt-2 flex justify-between">
               <span className="font-medium text-brand-dark">
                 To {firstName}

@@ -7,22 +7,6 @@ import { APP_CONFIG } from "@/lib/config";
  * POST /api/checkout
  *
  * Creates a Stripe Checkout session for a donation (one-time or recurring).
- *
- * Body:
- * {
- *   slug: string;
- *   amountPounds: number;
- *   frequency?: "one-time" | "monthly";
- *   wishlistItemId?: string;
- *   message?: string;
- *   companyName?: string;
- *   giftAid?: boolean;
- *   notifyEmail?: boolean;
- * }
- *
- * The donor pays: donation + service charge.
- * The recipient receives: donation amount (minus Stripe fees).
- * 10% of the donation is earmarked as savings (tracked on our side).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -34,11 +18,9 @@ export async function POST(request: NextRequest) {
       wishlistItemId,
       message,
       companyName,
-      giftAid,
       notifyEmail,
     } = body;
 
-    // Validate inputs
     if (!slug || typeof slug !== "string") {
       return NextResponse.json(
         { error: "Missing or invalid recipient." },
@@ -46,7 +28,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["one-time", "monthly"].includes(frequency)) {
+    if (![
+      "one-time",
+      "monthly",
+    ].includes(frequency)) {
       return NextResponse.json(
         { error: "Invalid frequency. Must be 'one-time' or 'monthly'." },
         { status: 400 }
@@ -55,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const amount = Number(amountPounds);
     if (
-      isNaN(amount) ||
+      Number.isNaN(amount) ||
       amount < APP_CONFIG.minimumDonation ||
       amount > APP_CONFIG.maximumDonation
     ) {
@@ -67,8 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Look up the recipient
-    const user = getUserBySlug(slug);
+    const user = await getUserBySlug(slug);
     if (!user || !user.active) {
       return NextResponse.json(
         { error: "Recipient not found or not currently active." },
@@ -76,29 +60,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate amounts (all in pence)
-    const giftAidMultiplier = giftAid ? 1.25 : 1;
-    const donationPence = Math.round(amount * giftAidMultiplier * 100);
+    // Gift Aid remains disabled until HMRC/legal onboarding is complete.
+    const donationPence = Math.round(amount * 100);
     const serviceChargePence = Math.round(
       donationPence * (APP_CONFIG.serviceChargePercentage / 100)
     );
     const savingsPence = Math.round(
       donationPence * (APP_CONFIG.savingsPercentage / 100)
     );
+    const spendablePence = donationPence - savingsPence;
 
-    // Build product description
+    const metadata = {
+      recipientId: user.id,
+      recipientDbId: user.databaseId ?? "",
+      recipientSlug: user.slug,
+      recipientName: user.firstName,
+      donationPence: donationPence.toString(),
+      serviceChargePence: serviceChargePence.toString(),
+      savingsPence: savingsPence.toString(),
+      spendablePence: spendablePence.toString(),
+      frequency,
+      wishlistItemId: wishlistItemId || "",
+      message: message || "",
+      companyName: companyName || "",
+      notifyEmail: notifyEmail ? "true" : "false",
+      giftAid: "disabled",
+    };
+
     let description = `£${amount.toFixed(2)} donation to ${user.firstName} in ${user.location} via Homeless Hand Up`;
     if (wishlistItemId) {
-      description += ` (wishlist item)`;
+      description += " (wishlist item)";
     }
     if (companyName) {
       description += ` (company match: ${companyName})`;
     }
 
-    // For monthly subscriptions, we need to use a different approach
     if (frequency === "monthly") {
-      // Create or get a recurring price for this product
-      // For MVP, we'll use line items with a simple monthly charge
       const session = await getStripe().checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "subscription",
@@ -132,19 +129,9 @@ export async function POST(request: NextRequest) {
             quantity: 1,
           },
         ],
-        metadata: {
-          recipientId: user.id,
-          recipientSlug: user.slug,
-          recipientName: user.firstName,
-          donationPence: donationPence.toString(),
-          serviceChargePence: serviceChargePence.toString(),
-          savingsPence: savingsPence.toString(),
-          frequency: "monthly",
-          wishlistItemId: wishlistItemId || "",
-          message: message || "",
-          companyName: companyName || "",
-          giftAid: giftAid ? "true" : "false",
-          notifyEmail: notifyEmail ? "true" : "false",
+        metadata,
+        subscription_data: {
+          metadata,
         },
         success_url: `${APP_CONFIG.appUrl}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${APP_CONFIG.appUrl}/donate/${user.slug}`,
@@ -153,7 +140,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ url: session.url });
     }
 
-    // One-time payment
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -181,20 +167,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      metadata: {
-        recipientId: user.id,
-        recipientSlug: user.slug,
-        recipientName: user.firstName,
-        donationPence: donationPence.toString(),
-        serviceChargePence: serviceChargePence.toString(),
-        savingsPence: savingsPence.toString(),
-        frequency: "one-time",
-        wishlistItemId: wishlistItemId || "",
-        message: message || "",
-        companyName: companyName || "",
-        giftAid: giftAid ? "true" : "false",
-        notifyEmail: notifyEmail ? "true" : "false",
-      },
+      metadata,
       success_url: `${APP_CONFIG.appUrl}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_CONFIG.appUrl}/donate/${user.slug}`,
     });

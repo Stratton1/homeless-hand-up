@@ -3,8 +3,8 @@ import { getLeaderboard, formatPence } from "@/lib/users";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 
-export default function LeaderboardPage() {
-  const leaderboard = getLeaderboard();
+export default async function LeaderboardPage() {
+  const leaderboard = await getLeaderboard();
 
   const getMedalColor = (rank: number) => {
     switch (rank) {
