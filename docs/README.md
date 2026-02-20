@@ -14,6 +14,7 @@ The platform is built as a Progressive Web App — no app download required. Wor
 |------|-------------|
 | `/docs/README.md` | This file — project overview and documentation index |
 | `/docs/ROADMAP.md` | Full phased roadmap from foundation to launch |
+| `/docs/IMAGE_CREDITS.md` | Source links and licence notes for photography used on the site |
 | `/CLAUDE.md` | Canonical project handbook (root) |
 | `/project_summary.md` | Current project snapshot — always up to date |
 | `/build_log.md` | Append-only log of all changes |

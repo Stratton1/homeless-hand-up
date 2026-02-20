@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getAllActiveUsers, getPlatformStats, formatPence, isPaydayFriday } from "@/lib/users";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
@@ -126,6 +127,52 @@ export default async function Home() {
               </svg>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ============================================ */}
+      {/* REAL IMAGES — Ground the story               */}
+      {/* ============================================ */}
+      <section className="pb-10 sm:pb-14 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative rounded-2xl overflow-hidden shadow-lg border border-white/60">
+              <Image
+                src="/images/community-volunteer.jpg"
+                alt="Volunteer handing food to people in need"
+                width={1600}
+                height={1067}
+                className="h-64 w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+              <p className="absolute bottom-3 left-3 text-white font-semibold text-sm">Direct support, same day</p>
+            </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-lg border border-white/60">
+              <Image
+                src="/images/community-groceries.jpg"
+                alt="Person carrying groceries and essentials"
+                width={1600}
+                height={1067}
+                className="h-64 w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+              <p className="absolute bottom-3 left-3 text-white font-semibold text-sm">Essentials people actually need</p>
+            </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-lg border border-white/60">
+              <Image
+                src="/images/community-food.jpg"
+                alt="Canned food and supplies prepared for distribution"
+                width={1600}
+                height={1067}
+                className="h-64 w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+              <p className="absolute bottom-3 left-3 text-white font-semibold text-sm">Food, hygiene, and basics</p>
+            </div>
+          </div>
+          <p className="text-xs text-brand-gray mt-3 text-right">
+            Real photos from Unsplash (free licence).
+          </p>
         </div>
       </section>
 

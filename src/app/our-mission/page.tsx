@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 
@@ -32,6 +33,37 @@ export default function OurMissionPage() {
               <p className="text-lg sm:text-xl text-brand-gray max-w-2xl mx-auto leading-relaxed">
                 You want to help the person you see on the street. But you don't carry cash. They can't accept a bank transfer. So nothing happens. We're here to close that gap.
               </p>
+            </div>
+          </section>
+
+          <section className="mb-16 sm:mb-20">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 relative rounded-2xl overflow-hidden shadow-lg border border-brand-warm/15">
+                <Image
+                  src="/images/community-volunteer.jpg"
+                  alt="Community volunteers preparing support for people in need"
+                  width={1600}
+                  height={1067}
+                  className="h-72 sm:h-80 w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                <p className="absolute bottom-4 left-4 text-white font-semibold">
+                  Real people. Real support. Real outcomes.
+                </p>
+              </div>
+              <div className="relative rounded-2xl overflow-hidden shadow-lg border border-brand-trust/15">
+                <Image
+                  src="/images/community-support-sign.jpg"
+                  alt="Community support sign in a local neighbourhood"
+                  width={1600}
+                  height={2400}
+                  className="h-72 sm:h-80 w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+                <p className="absolute bottom-4 left-4 text-white font-semibold text-sm">
+                  Community-first approach
+                </p>
+              </div>
             </div>
           </section>
 
