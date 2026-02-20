@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 
+interface WishlistItem {
+  id: string;
+  label: string;
+  emoji: string;
+  amountPence: number;
+  description: string;
+}
+
 interface DonationFormProps {
   slug: string;
   firstName: string;
@@ -10,7 +18,12 @@ interface DonationFormProps {
   maximumDonation: number;
   serviceChargePercentage: number;
   savingsPercentage: number;
+  wishlistItems?: WishlistItem[];
+  matchedFundingPartner?: string;
+  matchedFundingMultiplier?: number;
 }
+
+type Frequency = "one-time" | "monthly";
 
 export default function DonationForm({
   slug,
@@ -20,20 +33,37 @@ export default function DonationForm({
   maximumDonation,
   serviceChargePercentage,
   savingsPercentage,
+  wishlistItems = [],
+  matchedFundingPartner,
+  matchedFundingMultiplier = 1,
 }: DonationFormProps) {
+  const [frequency, setFrequency] = useState<Frequency>("one-time");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(5);
   const [customAmount, setCustomAmount] = useState("");
   const [isCustom, setIsCustom] = useState(false);
+  const [selectedWishlistId, setSelectedWishlistId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [companyName, setCompanyName] = useState("No");
+  const [giftAid, setGiftAid] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const donationAmount = isCustom
-    ? parseFloat(customAmount) || 0
-    : selectedAmount ?? 0;
+  // Calculate donation amount from selection
+  const donationAmount = selectedWishlistId
+    ? (wishlistItems.find((w) => w.id === selectedWishlistId)?.amountPence ?? 0) / 100
+    : isCustom
+      ? parseFloat(customAmount) || 0
+      : selectedAmount ?? 0;
 
-  const serviceCharge = donationAmount * (serviceChargePercentage / 100);
-  const totalCharge = donationAmount + serviceCharge;
-  const savingsAmount = donationAmount * (savingsPercentage / 100);
+  // Calculate charges and breakdown
+  const giftAidMultiplier = giftAid ? 1.25 : 1;
+  const donationAfterGiftAid = donationAmount * giftAidMultiplier;
+  const serviceCharge = donationAfterGiftAid * (serviceChargePercentage / 100);
+  const totalCharge = donationAfterGiftAid + serviceCharge;
+  const operationalContribution = donationAfterGiftAid * (serviceChargePercentage / 100);
+  const housingContribution = donationAfterGiftAid * (savingsPercentage / 100);
+  const amountToRecipient = donationAfterGiftAid - housingContribution;
 
   const isValid =
     donationAmount >= minimumDonation && donationAmount <= maximumDonation;
@@ -51,6 +81,12 @@ export default function DonationForm({
         body: JSON.stringify({
           slug,
           amountPounds: donationAmount,
+          frequency,
+          wishlistItemId: selectedWishlistId || undefined,
+          message: message || undefined,
+          companyName: companyName !== "No" ? companyName : undefined,
+          giftAid,
+          notifyEmail: notifyEmail ? true : undefined,
         }),
       });
 
@@ -73,39 +109,102 @@ export default function DonationForm({
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-warm/10">
-      <h2 className="font-bold text-lg text-brand-dark mb-4">
-        Choose an amount
-      </h2>
-
-      {/* Preset amounts */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        {presetAmounts.map((amount) => (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-warm/10 space-y-6">
+      {/* Frequency toggle */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-brand-dark">Donation type</h3>
+        <div className="flex gap-3">
           <button
-            key={amount}
-            onClick={() => {
-              setSelectedAmount(amount);
-              setIsCustom(false);
-              setCustomAmount("");
-              setError("");
-            }}
-            className={`py-3 rounded-xl font-semibold text-lg transition-all ${
-              !isCustom && selectedAmount === amount
+            onClick={() => setFrequency("one-time")}
+            className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
+              frequency === "one-time"
                 ? "bg-brand-warm text-white shadow-md shadow-brand-warm/20"
                 : "bg-brand-cream text-brand-dark hover:bg-brand-warm/10"
             }`}
           >
-            £{amount}
+            One-Time
           </button>
-        ))}
+          <button
+            onClick={() => setFrequency("monthly")}
+            className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
+              frequency === "monthly"
+                ? "bg-brand-warm text-white shadow-md shadow-brand-warm/20"
+                : "bg-brand-cream text-brand-dark hover:bg-brand-warm/10"
+            }`}
+          >
+            Monthly
+          </button>
+        </div>
+      </div>
+
+      {/* Wishlist grid */}
+      {wishlistItems.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-brand-dark">Or pick from a wishlist</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {wishlistItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setSelectedWishlistId(item.id);
+                  setIsCustom(false);
+                  setSelectedAmount(null);
+                  setCustomAmount("");
+                  setError("");
+                }}
+                className={`p-3 rounded-xl text-left transition-all border-2 ${
+                  selectedWishlistId === item.id
+                    ? "border-brand-warm bg-brand-warm/5 shadow-md shadow-brand-warm/20"
+                    : "border-brand-warm/10 bg-brand-cream hover:border-brand-warm/30"
+                }`}
+              >
+                <div className="text-2xl mb-1">{item.emoji}</div>
+                <div className="text-xs font-semibold text-brand-dark">{item.label}</div>
+                <div className="text-xs text-brand-gray">{item.description}</div>
+                <div className="text-xs font-bold text-brand-warm mt-1">
+                  £{(item.amountPence / 100).toFixed(2)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Preset amounts */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-brand-dark">
+          {wishlistItems.length > 0 ? "Or choose an amount" : "Choose an amount"}
+        </h3>
+        <div className="grid grid-cols-4 gap-2">
+          {presetAmounts.map((amount) => (
+            <button
+              key={amount}
+              onClick={() => {
+                setSelectedAmount(amount);
+                setIsCustom(false);
+                setCustomAmount("");
+                setSelectedWishlistId(null);
+                setError("");
+              }}
+              className={`py-3 rounded-xl font-semibold text-lg transition-all ${
+                !isCustom && !selectedWishlistId && selectedAmount === amount
+                  ? "bg-brand-warm text-white shadow-md shadow-brand-warm/20"
+                  : "bg-brand-cream text-brand-dark hover:bg-brand-warm/10"
+              }`}
+            >
+              £{amount}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Custom amount */}
-      <div className="mb-6">
+      <div>
         <button
           onClick={() => {
             setIsCustom(true);
             setSelectedAmount(null);
+            setSelectedWishlistId(null);
             setError("");
           }}
           className={`w-full text-left text-sm font-medium mb-2 transition-colors ${
@@ -137,54 +236,147 @@ export default function DonationForm({
         )}
       </div>
 
-      {/* Breakdown */}
+      {/* Message of support */}
+      <div className="space-y-2">
+        <label className="text-sm font-semibold text-brand-dark flex items-center gap-2">
+          <svg className="w-4 h-4 text-brand-warm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+          </svg>
+          Message of support (optional)
+        </label>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value.slice(0, 280))}
+          placeholder={`Tell ${firstName} you're rooting for them (max 280 characters)`}
+          maxLength={280}
+          className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-warm/30 focus:border-brand-warm resize-none"
+          rows={3}
+        />
+        <div className="text-xs text-brand-gray text-right">
+          {message.length} / 280
+        </div>
+      </div>
+
+      {/* Company attribution */}
+      <div className="space-y-2">
+        <label className="text-sm font-semibold text-brand-dark flex items-center gap-2">
+          <svg className="w-4 h-4 text-brand-warm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.5m0 0H9m0 0h-.5M9 7h.5M9 11h.5" />
+          </svg>
+          Is your company matching this?
+        </label>
+        <select
+          value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
+          className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-warm/30 focus:border-brand-warm"
+        >
+          <option value="No">No</option>
+          <option value="Deloitte">Deloitte</option>
+          <option value="PwC">PwC</option>
+          <option value="BBC Media City">BBC Media City</option>
+          <option value="NatWest Group">NatWest Group</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      {/* Gift Aid checkbox */}
+      <label className="flex items-start gap-3 p-3 bg-brand-trust/5 rounded-xl cursor-pointer hover:bg-brand-trust/10 transition-colors">
+        <input
+          type="checkbox"
+          checked={giftAid}
+          onChange={(e) => setGiftAid(e.target.checked)}
+          className="mt-1 w-4 h-4 accent-brand-trust rounded"
+        />
+        <div>
+          <div className="text-sm font-medium text-brand-dark">
+            I am a UK taxpayer
+          </div>
+          <div className="text-xs text-brand-gray">
+            Add Gift Aid to increase your donation by 25% at no extra cost
+          </div>
+        </div>
+      </label>
+
+      {/* Breakdown display */}
       {donationAmount > 0 && (
-        <div className="bg-brand-cream rounded-xl p-4 mb-6 text-sm">
-          <div className="flex justify-between mb-2">
-            <span className="text-brand-gray">
-              Donation to {firstName}
-            </span>
-            <span className="font-semibold">
-              £{donationAmount.toFixed(2)}
-            </span>
+        <div className="bg-gradient-to-br from-brand-warm/5 to-brand-trust/5 rounded-xl p-4 space-y-3 border border-brand-warm/10">
+          <div className="text-sm font-semibold text-brand-dark mb-3">
+            Your donation breakdown
           </div>
-          <div className="flex justify-between mb-2">
-            <span className="text-brand-gray">
-              Platform fee ({serviceChargePercentage}%)
-            </span>
-            <span className="font-semibold">
-              £{serviceCharge.toFixed(2)}
-            </span>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-brand-gray">
+                Base donation
+              </span>
+              <span className="font-semibold text-brand-dark">
+                £{donationAmount.toFixed(2)}
+              </span>
+            </div>
+            {giftAid && (
+              <div className="flex justify-between">
+                <span className="text-brand-gray">
+                  Gift Aid (25%)
+                </span>
+                <span className="font-semibold text-brand-trust">
+                  +£{(donationAfterGiftAid - donationAmount).toFixed(2)}
+                </span>
+              </div>
+            )}
+            <div className="border-t border-brand-warm/20 pt-2 mt-2 flex justify-between">
+              <span className="font-medium text-brand-dark">
+                To {firstName}
+              </span>
+              <span className="font-bold text-brand-warm">
+                £{amountToRecipient.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-brand-gray text-xs">
+                Housing savings (10%)
+              </span>
+              <span className="text-xs font-semibold text-brand-trust">
+                £{housingContribution.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-brand-gray text-xs">
+                Platform contribution (15%)
+              </span>
+              <span className="text-xs font-semibold text-brand-gray">
+                £{operationalContribution.toFixed(2)}
+              </span>
+            </div>
           </div>
-          <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between">
-            <span className="font-bold text-brand-dark">Total charge</span>
-            <span className="font-bold text-brand-dark">
+          <div className="border-t border-brand-warm/20 pt-3 flex justify-between">
+            <span className="font-bold text-brand-dark">Total you pay</span>
+            <span className="font-bold text-lg text-brand-warm">
               £{totalCharge.toFixed(2)}
             </span>
-          </div>
-          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2 text-xs text-brand-trust">
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-            £{savingsAmount.toFixed(2)} will be automatically saved towards
-            housing
           </div>
         </div>
       )}
 
+      {/* Milestone notification opt-in */}
+      <label className="flex items-start gap-3 p-3 bg-brand-cream rounded-xl cursor-pointer hover:bg-brand-cream/80 transition-colors">
+        <input
+          type="checkbox"
+          checked={notifyEmail}
+          onChange={(e) => setNotifyEmail(e.target.checked)}
+          className="mt-1 w-4 h-4 accent-brand-warm rounded"
+        />
+        <div>
+          <div className="text-sm font-medium text-brand-dark">
+            Email me updates
+          </div>
+          <div className="text-xs text-brand-gray">
+            Get updates about {firstName}'s progress towards their goals
+          </div>
+        </div>
+      </label>
+
       {/* Error */}
       {error && (
-        <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3 mb-4">
+        <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3 border border-red-200">
           {error}
         </div>
       )}
@@ -195,7 +387,7 @@ export default function DonationForm({
         disabled={!isValid || isLoading}
         className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
           isValid && !isLoading
-            ? "bg-brand-warm text-white hover:bg-brand-warm-dark shadow-lg shadow-brand-warm/20 active:scale-[0.98]"
+            ? "bg-gradient-to-r from-brand-warm to-brand-warm-dark text-white hover:shadow-lg hover:shadow-brand-warm/30 active:scale-[0.98] shadow-md shadow-brand-warm/20"
             : "bg-gray-200 text-gray-400 cursor-not-allowed"
         }`}
       >
@@ -220,16 +412,16 @@ export default function DonationForm({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            Redirecting to payment...
+            {frequency === "monthly" ? "Setting up subscription..." : "Redirecting to payment..."}
           </span>
         ) : isValid ? (
-          `Donate £${totalCharge.toFixed(2)}`
+          `${frequency === "monthly" ? "Set up monthly" : "Donate"} £${totalCharge.toFixed(2)}`
         ) : (
           "Choose an amount"
         )}
       </button>
 
-      <p className="text-xs text-center text-brand-gray mt-3">
+      <p className="text-xs text-center text-brand-gray">
         Secure payment powered by Stripe. We never see your card details.
       </p>
     </div>

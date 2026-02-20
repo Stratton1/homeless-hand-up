@@ -1,71 +1,69 @@
 import Link from "next/link";
-import { getAllActiveUsers, formatPence } from "@/lib/users";
+import { getAllActiveUsers, getPlatformStats, formatPence, isPaydayFriday } from "@/lib/users";
+import SiteHeader from "@/components/site-header";
+import SiteFooter from "@/components/site-footer";
 
 export default function Home() {
-  const users = getAllActiveUsers();
+  const communityMembers = getAllActiveUsers().slice(0, 3);
+  const stats = getPlatformStats();
+  const isPayday = isPaydayFriday();
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-cream/95 backdrop-blur-sm border-b border-brand-warm/10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-warm to-brand-warm-dark flex items-center justify-center shadow-md shadow-brand-warm/20">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
-            <span className="text-xl font-bold text-brand-dark">Homeless Hand Up</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-6 text-sm">
-            <a href="#how-it-works" className="text-brand-gray hover:text-brand-warm transition-colors">How It Works</a>
-            <a href="#donate-now" className="text-brand-gray hover:text-brand-warm transition-colors">Donate Now</a>
-            <a href="#safeguards" className="text-brand-gray hover:text-brand-warm transition-colors">Safeguards</a>
-            <a href="#donate-now" className="bg-gradient-to-r from-brand-warm to-brand-warm-dark text-white px-5 py-2 rounded-full hover:shadow-lg hover:shadow-brand-warm/25 transition-all font-medium">
-              Give Now
-            </a>
-          </div>
-          {/* Mobile menu button */}
-          <a href="#donate-now" className="sm:hidden bg-brand-warm text-white px-4 py-2 rounded-full text-sm font-medium">
-            Give Now
-          </a>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-brand-cream">
+      {/* Header */}
+      <SiteHeader />
 
-      {/* Hero Section — with warm illustration */}
-      <section className="pt-28 pb-16 sm:pt-36 sm:pb-24 px-4 sm:px-6 relative overflow-hidden">
+      {/* ============================================ */}
+      {/* HERO SECTION — Emotional hook                */}
+      {/* ============================================ */}
+      <section className="pt-32 pb-16 sm:pt-40 sm:pb-24 px-4 sm:px-6 relative overflow-hidden">
         {/* Background decorative shapes */}
         <div className="absolute top-20 right-0 w-72 h-72 bg-brand-warm/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-hope/5 rounded-full blur-3xl" />
         <div className="absolute top-40 left-10 w-48 h-48 bg-brand-trust/5 rounded-full blur-3xl" />
 
         <div className="max-w-6xl mx-auto relative">
+          {/* Payday Friday banner (optional) */}
+          {isPayday && (
+            <div className="mb-6 mx-auto max-w-2xl">
+              <div className="bg-gradient-to-r from-brand-hope to-brand-hope/80 text-brand-dark px-6 py-3 rounded-full text-center font-semibold shadow-md shadow-brand-hope/20">
+                ✨ It's Payday Friday! Donate your coffee money today.
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left: text */}
             <div className="text-center lg:text-left">
               <div className="inline-block bg-gradient-to-r from-brand-warm/10 to-brand-hope/10 text-brand-warm-dark px-4 py-1.5 rounded-full text-sm font-medium mb-6 border border-brand-warm/10">
-                No app needed &middot; No signup required
+                No app needed · No signup required
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-brand-dark">
-                Give directly.
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-brand-dark">
+                Every person
                 <br />
                 <span className="bg-gradient-to-r from-brand-warm to-brand-warm-dark bg-clip-text text-transparent">
-                  Change lives.
+                  deserves to be seen.
                 </span>
               </h1>
               <p className="text-lg sm:text-xl text-brand-gray max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed">
-                No more &ldquo;sorry, I don&rsquo;t have cash.&rdquo; Scan a QR code and donate directly to someone who needs it &mdash; with safeguards that ensure every penny helps.
+                When you see someone asking for help, what stops you? Not anymore. Scan their QR code, choose how much to give, and connect directly — with safeguards that protect dignity on both sides.
               </p>
               <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4">
-                <a href="#donate-now" className="bg-gradient-to-r from-brand-warm to-brand-warm-dark text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-xl hover:shadow-brand-warm/25 transition-all hover:-translate-y-0.5">
-                  Start Giving Today
-                </a>
-                <a href="#how-it-works" className="text-brand-trust font-medium flex items-center gap-2 hover:text-brand-trust-dark transition-colors px-4 py-4">
-                  See how it works
+                <Link
+                  href="/community"
+                  className="bg-gradient-to-r from-brand-warm to-brand-warm-dark text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-xl hover:shadow-brand-warm/25 transition-all hover:-translate-y-0.5"
+                >
+                  Meet Our Community
+                </Link>
+                <Link
+                  href="/how-it-works/donors"
+                  className="text-brand-trust font-medium flex items-center gap-2 hover:text-brand-trust-dark transition-colors px-4 py-4"
+                >
+                  How It Works
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -128,121 +126,152 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="bg-gradient-to-r from-brand-trust-dark via-brand-trust to-brand-trust-dark py-8 px-4 sm:px-6">
+      {/* ============================================ */}
+      {/* LIVE IMPACT COUNTER — Real platform stats    */}
+      {/* ============================================ */}
+      <section className="bg-gradient-to-r from-brand-trust-dark via-brand-trust to-brand-trust-dark py-12 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 text-center text-white">
           <div>
-            <div className="text-3xl font-bold mb-1">300,000+</div>
-            <div className="text-brand-trust-light text-sm">People experiencing homelessness in the UK</div>
+            <div className="text-4xl sm:text-5xl font-bold mb-2">{formatPence(stats.totalProcessedPence)}</div>
+            <div className="text-brand-trust-light text-sm sm:text-base">raised for our community</div>
           </div>
           <div>
-            <div className="text-3xl font-bold mb-1">78%</div>
-            <div className="text-brand-trust-light text-sm">Say &ldquo;no cash&rdquo; is the top reason they don&rsquo;t give</div>
+            <div className="text-4xl sm:text-5xl font-bold mb-2">{stats.totalMembers}</div>
+            <div className="text-brand-trust-light text-sm sm:text-base">lives being supported</div>
           </div>
           <div>
-            <div className="text-3xl font-bold mb-1">100%</div>
-            <div className="text-brand-trust-light text-sm">Of your donation goes directly to the individual</div>
+            <div className="text-4xl sm:text-5xl font-bold mb-2">{formatPence(stats.totalSavingsPence)}</div>
+            <div className="text-brand-trust-light text-sm sm:text-base">saved for housing</div>
           </div>
         </div>
       </section>
 
       {/* ============================================ */}
-      {/* DONATE NOW — recipient cards                 */}
+      {/* FEATURED COMMUNITY PROFILES                   */}
       {/* ============================================ */}
-      <section id="donate-now" className="py-20 px-4 sm:px-6 bg-white">
+      <section className="py-20 px-4 sm:px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-block bg-brand-warm/10 text-brand-warm-dark px-4 py-1.5 rounded-full text-sm font-medium mb-4">
-              No signup needed
+              Real people, real stories
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              People who need your help
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-brand-dark">
+              Meet Our Community
             </h2>
             <p className="text-brand-gray text-lg max-w-xl mx-auto">
-              Choose someone to support. Every donation is protected with spending safeguards and 10% goes straight into their housing savings.
+              These are the people you can support directly. Scan a QR code, give what you can, and watch the impact unfold in real time.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {users.map((user) => (
-              <div key={user.id} className="bg-brand-cream rounded-2xl overflow-hidden border border-brand-warm/10 hover:shadow-lg hover:shadow-brand-warm/10 transition-all hover:-translate-y-1 group">
-                {/* Coloured header bar */}
-                <div className="h-24 bg-gradient-to-br from-brand-trust to-brand-trust-light relative">
-                  {/* Decorative pattern */}
-                  <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 400 100">
-                    <circle cx="50" cy="20" r="30" fill="white" />
-                    <circle cx="350" cy="60" r="40" fill="white" />
-                    <circle cx="200" cy="80" r="20" fill="white" />
-                  </svg>
-                  {/* Avatar */}
-                  <div className="absolute -bottom-8 left-6">
-                    <div className="w-16 h-16 rounded-full bg-white border-4 border-brand-cream flex items-center justify-center shadow-md">
-                      <span className="text-2xl font-bold text-brand-trust">{user.firstName.charAt(0)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-12 pb-6 px-6">
-                  <h3 className="text-xl font-bold text-brand-dark mb-1">{user.firstName}</h3>
-                  <p className="text-sm text-brand-gray flex items-center gap-1 mb-3">
-                    <svg className="w-3.5 h-3.5 text-brand-warm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {user.location}
-                  </p>
-                  <p className="text-brand-gray text-sm leading-relaxed mb-4 line-clamp-3">{user.bio}</p>
-
-                  {/* Stats */}
-                  <div className="flex gap-3 mb-5">
-                    <div className="bg-white rounded-lg px-3 py-2 flex-1 text-center">
-                      <div className="text-sm font-bold text-brand-dark">{formatPence(user.balancePence)}</div>
-                      <div className="text-[10px] text-brand-gray uppercase tracking-wide">Raised</div>
-                    </div>
-                    <div className="bg-brand-trust/5 rounded-lg px-3 py-2 flex-1 text-center">
-                      <div className="text-sm font-bold text-brand-trust">{formatPence(user.savingsPence)}</div>
-                      <div className="text-[10px] text-brand-gray uppercase tracking-wide">Housing</div>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/donate/${user.slug}`}
-                      className="flex-1 bg-gradient-to-r from-brand-warm to-brand-warm-dark text-white py-3 rounded-xl font-semibold text-center hover:shadow-lg hover:shadow-brand-warm/20 transition-all text-sm"
-                    >
-                      Donate Now
-                    </Link>
-                    <Link
-                      href={`/profile/${user.slug}`}
-                      className="px-4 py-3 rounded-xl border border-brand-warm/20 text-brand-warm hover:bg-brand-warm/5 transition-colors"
-                      title="View profile & QR code"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          {communityMembers.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {communityMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="bg-brand-cream rounded-2xl overflow-hidden border border-brand-warm/10 hover:shadow-lg hover:shadow-brand-warm/10 transition-all hover:-translate-y-1 group"
+                  >
+                    {/* Coloured header bar */}
+                    <div className="h-24 bg-gradient-to-br from-brand-trust to-brand-trust-light relative">
+                      {/* Decorative pattern */}
+                      <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 400 100">
+                        <circle cx="50" cy="20" r="30" fill="white" />
+                        <circle cx="350" cy="60" r="40" fill="white" />
+                        <circle cx="200" cy="80" r="20" fill="white" />
                       </svg>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                      {/* Avatar */}
+                      <div className="absolute -bottom-8 left-6">
+                        <div className="w-16 h-16 rounded-full bg-white border-4 border-brand-cream flex items-center justify-center shadow-md">
+                          <span className="text-2xl font-bold text-brand-trust">{member.firstName.charAt(0)}</span>
+                        </div>
+                      </div>
+                    </div>
 
-          <p className="text-center mt-8 text-sm text-brand-gray">
-            More people will be added as we grow. Want to help someone get set up?{" "}
-            <a href="#get-involved" className="text-brand-warm hover:text-brand-warm-dark font-medium">Get in touch</a>.
-          </p>
+                    <div className="pt-12 pb-6 px-6">
+                      <h3 className="text-xl font-bold text-brand-dark mb-1">{member.firstName}</h3>
+                      <p className="text-sm text-brand-gray flex items-center gap-1 mb-3">
+                        <svg className="w-3.5 h-3.5 text-brand-warm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {member.location}, {member.area}
+                      </p>
+                      <p className="text-brand-gray text-sm leading-relaxed mb-4 line-clamp-2">{member.bio}</p>
+
+                      {/* Savings progress */}
+                      <div className="mb-5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-brand-trust uppercase tracking-wide">Housing Goal</span>
+                          <span className="text-sm font-bold text-brand-dark">{formatPence(member.savingsPence)} of {formatPence(member.savingsGoalPence)}</span>
+                        </div>
+                        <div className="w-full bg-brand-gray/10 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-brand-warm to-brand-warm-dark h-full rounded-full transition-all"
+                            style={{
+                              width: `${Math.min((member.savingsPence / member.savingsGoalPence) * 100, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Matched funding badge (if applicable) */}
+                      {member.matchedFundingPartner && (
+                        <div className="mb-4 bg-brand-hope/10 text-brand-warm-dark text-xs font-semibold px-3 py-1.5 rounded-full text-center">
+                          {member.matchedFundingPartner} matching donations
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/donate/${member.slug}`}
+                          className="flex-1 bg-gradient-to-r from-brand-warm to-brand-warm-dark text-white py-3 rounded-xl font-semibold text-center hover:shadow-lg hover:shadow-brand-warm/20 transition-all text-sm"
+                        >
+                          Support {member.firstName}
+                        </Link>
+                        <Link
+                          href={`/profile/${member.slug}`}
+                          className="px-4 py-3 rounded-xl border border-brand-warm/20 text-brand-warm hover:bg-brand-warm/5 transition-colors"
+                          title="View profile & QR code"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="text-center">
+                <Link
+                  href="/community"
+                  className="inline-block text-brand-warm hover:text-brand-warm-dark font-semibold transition-colors"
+                >
+                  View all community members →
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-brand-gray text-lg">Community members coming soon. Check back soon to meet people you can support.</p>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* How It Works — with illustrations */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 relative">
+      {/* ============================================ */}
+      {/* HOW IT WORKS — mini-section                  */}
+      {/* ============================================ */}
+      <section className="py-20 px-4 sm:px-6 relative">
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-hope/5 rounded-full blur-3xl" />
         <div className="max-w-5xl mx-auto relative">
           <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Three taps. One real difference.</h2>
-            <p className="text-brand-gray text-lg max-w-xl mx-auto">No app to download. No account to create. Just scan, choose, give.</p>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-brand-dark">Three simple steps</h2>
+            <p className="text-brand-gray text-lg max-w-xl mx-auto">No app. No account. Just scan, choose, give.</p>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Step 1 */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-brand-warm/10 text-center relative overflow-hidden group hover:shadow-md transition-shadow">
@@ -260,14 +289,14 @@ export default function Home() {
                   <line x1="28" y1="58" x2="52" y2="58" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
-              <div className="text-brand-warm font-bold text-sm uppercase tracking-wide mb-2">Step 1</div>
-              <h3 className="text-xl font-bold mb-3">Scan the QR Code</h3>
-              <p className="text-brand-gray leading-relaxed">See someone with a Homeless Hand Up QR card? Open your phone camera and scan it. No app download needed.</p>
+              <div className="text-brand-warm font-bold text-sm uppercase tracking-wide mb-2">Scan</div>
+              <h3 className="text-xl font-bold mb-3 text-brand-dark">Open the QR Code</h3>
+              <p className="text-brand-gray leading-relaxed">Use your phone camera to scan their QR code. No app needed — your browser does the work.</p>
             </div>
 
             {/* Step 2 */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-brand-warm/10 text-center relative overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-hope to-brand-hope-light" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-hope to-brand-hope/80" />
               <div className="w-20 h-20 mx-auto mb-5">
                 <svg viewBox="0 0 80 80" fill="none" className="w-full h-full">
                   <circle cx="40" cy="40" r="38" fill="#FFF8F0" stroke="#F5C563" strokeWidth="1" />
@@ -281,9 +310,9 @@ export default function Home() {
                   <text x="56" y="67" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold">£10</text>
                 </svg>
               </div>
-              <div className="text-brand-hope font-bold text-sm uppercase tracking-wide mb-2">Step 2</div>
-              <h3 className="text-xl font-bold mb-3">Choose Your Amount</h3>
-              <p className="text-brand-gray leading-relaxed">Pick how much you&rsquo;d like to give — from as little as £1. Quick preset amounts or enter your own.</p>
+              <div className="text-brand-hope font-bold text-sm uppercase tracking-wide mb-2">Choose</div>
+              <h3 className="text-xl font-bold mb-3 text-brand-dark">Pick Your Amount</h3>
+              <p className="text-brand-gray leading-relaxed">Select a preset amount or enter your own. From £1 upwards — whatever feels right.</p>
             </div>
 
             {/* Step 3 */}
@@ -301,147 +330,135 @@ export default function Home() {
                   <text x="40" y="69" textAnchor="middle" fill="#C55A33" fontSize="5" fontWeight="bold">£</text>
                 </svg>
               </div>
-              <div className="text-brand-trust font-bold text-sm uppercase tracking-wide mb-2">Step 3</div>
-              <h3 className="text-xl font-bold mb-3">Give &amp; Connect</h3>
-              <p className="text-brand-gray leading-relaxed">Pay securely with Apple Pay, Google Pay, or your card. Have a chat. You just made someone&rsquo;s day.</p>
+              <div className="text-brand-trust font-bold text-sm uppercase tracking-wide mb-2">Give</div>
+              <h3 className="text-xl font-bold mb-3 text-brand-dark">Pay & Connect</h3>
+              <p className="text-brand-gray leading-relaxed">Pay securely with Apple Pay, Google Pay, or card. You just made someone's day real.</p>
             </div>
+          </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/how-it-works/donors"
+              className="inline-block text-brand-trust hover:text-brand-trust-dark font-semibold transition-colors"
+            >
+              Full guide →
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Why It Matters */}
-      <section id="why-it-matters" className="py-20 px-4 sm:px-6 bg-white relative">
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-brand-warm/5 rounded-full blur-3xl" />
-        <div className="max-w-5xl mx-auto relative">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Why this matters</h2>
-            <p className="text-brand-gray text-lg max-w-2xl mx-auto">
-              We live in a cashless world, but homelessness hasn&rsquo;t gone anywhere. The number one reason people don&rsquo;t help is &ldquo;I don&rsquo;t carry cash.&rdquo; We&rsquo;re fixing that.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-br from-brand-cream to-white rounded-2xl p-6 border border-brand-warm/10 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-brand-warm/10 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-brand-warm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-lg mb-2">Direct bottom-up charity</h3>
-              <p className="text-brand-gray">No middleman. No waiting for councils or government. Your money goes straight to the person in front of you.</p>
-            </div>
-            <div className="bg-gradient-to-br from-brand-cream to-white rounded-2xl p-6 border border-brand-warm/10 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-brand-trust/10 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-brand-trust" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-lg mb-2">Protected spending</h3>
-              <p className="text-brand-gray">Funds can only be spent at approved retailers. No alcohol, no cigarettes, no gambling. Every penny supports real needs.</p>
-            </div>
-            <div className="bg-gradient-to-br from-brand-cream to-white rounded-2xl p-6 border border-brand-warm/10 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-brand-hope/20 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-brand-hope" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-lg mb-2">Built-in savings</h3>
-              <p className="text-brand-gray">10% of every donation is automatically saved towards housing. Small amounts add up to life-changing totals.</p>
-            </div>
-            <div className="bg-gradient-to-br from-brand-cream to-white rounded-2xl p-6 border border-brand-warm/10 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-lg mb-2">Works on any phone</h3>
-              <p className="text-brand-gray">No app to download. Just scan the QR code with your phone camera and you&rsquo;re ready to give. Takes less than 30 seconds.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Safeguards */}
-      <section id="safeguards" className="py-20 px-4 sm:px-6">
+      {/* ============================================ */}
+      {/* TRUST SECTION — Safe giving                  */}
+      {/* ============================================ */}
+      <section className="py-20 px-4 sm:px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Smart safeguards. Real accountability.</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-brand-dark">Our Commitment to Safe Giving</h2>
             <p className="text-brand-gray text-lg max-w-2xl mx-auto">
-              We&rsquo;ve designed this to give donors confidence and recipients dignity. Every feature promotes long-term benefit.
+              We've built safeguards into every part of the platform. Your donation is protected. Their dignity is protected. Everything is transparent.
             </p>
           </div>
-          <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-sm border border-brand-warm/10">
+
+          <div className="bg-gradient-to-br from-brand-cream to-white rounded-2xl p-8 sm:p-10 border border-brand-warm/10">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {[
-                { title: "Restricted purchases", desc: "Funds work at approved supermarkets and essential retailers only. Alcohol, tobacco, and gambling are blocked." },
-                { title: "Non-transferable", desc: "Each account is linked to an individual. Funds can't be moved to someone else's account." },
-                { title: "Daily limits", desc: "Recipients can set their own daily spending limits, building healthy financial habits." },
-                { title: "Full paper trail", desc: "Every donation and transaction is tracked transparently. Donors and recipients can see where money goes." },
-                { title: "Housing savings", desc: "10% of each donation is automatically saved in a locked fund, building towards a deposit for housing." },
-                { title: "Contactless & hygienic", desc: "No physical cash changes hands. Safer and more hygienic for everyone involved." },
-              ].map((item) => (
-                <div key={item.title} className="flex gap-4">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-bold mb-1">{item.title}</h4>
-                    <p className="text-brand-gray text-sm">{item.desc}</p>
-                  </div>
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-brand-warm/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-brand-warm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-              ))}
+                <div>
+                  <h4 className="font-bold text-brand-dark mb-1">Restricted Spending</h4>
+                  <p className="text-brand-gray text-sm">Funds work at approved supermarkets and essential retailers only. No alcohol, cigarettes, or gambling.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-brand-trust/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-brand-trust" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-brand-dark mb-1">10% Housing Savings</h4>
+                  <p className="text-brand-gray text-sm">Every donation automatically saves 10% towards a housing deposit. Small amounts add up to real change.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-brand-hope/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-brand-hope" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-brand-dark mb-1">Full Transparency</h4>
+                  <p className="text-brand-gray text-sm">See exactly where your money goes. Every transaction is tracked and visible to you and the recipient.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-brand-dark mb-1">No Middlemen</h4>
+                  <p className="text-brand-gray text-sm">Direct from you to them. No charities, no waiting lists, no bureaucracy — just real connection and real help.</p>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/transparency"
+              className="inline-block text-brand-trust hover:text-brand-trust-dark font-semibold transition-colors"
+            >
+              Learn more about our safeguards →
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section id="get-involved" className="py-20 px-4 sm:px-6 bg-gradient-to-br from-brand-trust-dark via-brand-trust to-brand-trust">
+      {/* ============================================ */}
+      {/* CTA SECTION at bottom                       */}
+      {/* ============================================ */}
+      <section className="py-20 px-4 sm:px-6 bg-gradient-to-br from-brand-trust-dark via-brand-trust to-brand-trust">
         <div className="max-w-3xl mx-auto text-center text-white">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">Ready to make a difference?</h2>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-6">Ready to make a difference?</h2>
           <p className="text-lg text-brand-trust-light mb-10 leading-relaxed">
-            Whether you want to donate, volunteer, partner with us, or help a homeless person get set up — we&rsquo;d love to hear from you.
+            Whether you want to give right now, partner with us, or help someone get set up — we'd love to hear from you.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#donate-now" className="bg-white text-brand-trust px-8 py-3.5 rounded-full text-lg font-semibold hover:bg-brand-cream transition-colors shadow-lg">
-              Donate Now
-            </a>
-            <a href="mailto:hello@homelesshandup.org" className="border-2 border-white/40 text-white px-8 py-3.5 rounded-full text-lg font-semibold hover:border-white transition-colors">
+            <Link
+              href="/community"
+              className="bg-white text-brand-trust px-8 py-3.5 rounded-full text-lg font-semibold hover:bg-brand-cream transition-colors shadow-lg"
+            >
+              Meet Our Community
+            </Link>
+            <a
+              href="mailto:hello@homelesshandup.org"
+              className="border-2 border-white/40 text-white px-8 py-3.5 rounded-full text-lg font-semibold hover:border-white transition-colors"
+            >
               Get in Touch
             </a>
           </div>
         </div>
       </section>
 
-      {/* Tagline */}
-      <section className="py-10 px-4 sm:px-6 bg-gradient-to-r from-brand-warm-dark via-brand-warm to-brand-warm-dark text-white text-center">
+      {/* ============================================ */}
+      {/* TAGLINE SECTION                              */}
+      {/* ============================================ */}
+      <section className="py-12 px-4 sm:px-6 bg-gradient-to-r from-brand-warm-dark via-brand-warm to-brand-warm-dark text-white text-center">
         <p className="text-lg sm:text-xl font-medium italic max-w-3xl mx-auto">
           &ldquo;Bottom up charity with parameters in place that promote long term benefits for the homeless.&rdquo;
         </p>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 bg-brand-dark text-white/60">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-warm to-brand-warm-dark flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <span className="text-white font-semibold">Homeless Hand Up</span>
-            </div>
-            <div className="flex gap-6 text-sm">
-              <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-              <a href="#donate-now" className="hover:text-white transition-colors">Donate</a>
-              <a href="#safeguards" className="hover:text-white transition-colors">Safeguards</a>
-            </div>
-            <div className="text-sm">&copy; {new Date().getFullYear()} Homeless Hand Up. All rights reserved.</div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

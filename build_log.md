@@ -118,3 +118,104 @@
 - Updated: src/app/api/webhook/route.ts (getStripe)
 
 **Follow-ups:** Push to GitHub. Set up Stripe test keys on Vercel. Phase 3: database integration.
+
+---
+
+## 2026-02-20 — Phase 2 Complete: Full Platform Overhaul
+
+**Summary:** Massive platform expansion from 8 routes to 20 routes. Transformed from a single-page donation tool into a comprehensive multi-page community platform with advanced features.
+
+**What was done:**
+
+### Architecture & Pages
+- Multi-page architecture: /, /our-mission, /how-it-works/donors, /how-it-works/recipients, /community, /transparency, /where-to-spend, /leaderboard, /local, /admin, /recipient-dashboard
+- Shared SiteHeader (responsive, mobile hamburger, dropdown submenus) and SiteFooter
+- Homepage rewritten with emotional hero, live impact counter, featured profiles, Payday Friday banner
+
+### Data Model Overhaul
+- Renamed HomelessUser → CommunityMember with rich fields: age, area, journey[], wishlist[], messages[], savingsGoalPence, savingsGoalDescription, background, supportWorker, matchedFundingPartner
+- 5 sample members (added Lisa/Leeds and David/Glasgow)
+- Platform stats, retailer partners, corporate leaderboard data
+- Default wishlist items (6 categories: food, clothing, connectivity, hygiene, transport)
+
+### Enhanced Donation Form
+- One-time vs Monthly toggle (Stripe subscription support)
+- Wishlist grid — donors fund specific needs (meal, coat, phone top-up, etc.)
+- Message of support textarea (280 chars)
+- Company attribution dropdown for leaderboard
+- Gift Aid checkbox (+25% for UK taxpayers)
+- Milestone notification opt-in
+- Enhanced donation breakdown display
+- Checkout API updated for all new fields and subscription mode
+
+### Enhanced Profiles
+- Journey timeline with colour-coded milestones (start/progress/goal/achievement)
+- Savings progress bar towards housing goal
+- Messages of support guestbook feed
+- Wishlist display linking to pre-filled donation pages
+- Matched funding badge
+- Support worker info
+- Background story section
+
+### Advanced Features
+- /local — Find Near Me with city filtering and map placeholder
+- /admin — Support Worker Portal (demo: member table, stats summary)
+- /profile/[id]/print — Printable QR badge (A6 optimised, @media print CSS)
+- /recipient-dashboard — Recipient view with balance, messages, wishlist, emergency button
+- Emergency "Request Support Worker Contact" button
+- /api/wallet-pass — Mock endpoint (coming soon)
+
+### Copy & Vocabulary
+- "Users" → "Community Members" throughout
+- "Service Charge" → "Operational Contribution"
+- Community-focused, warm vocabulary across all pages
+- Removed all lucide-react dependencies (replaced with inline SVGs)
+
+**Verification:** Build passes cleanly — 20 routes, 0 errors.
+
+```
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ƒ /api/checkout
+├ ƒ /api/wallet-pass
+├ ƒ /api/webhook
+├ ○ /community
+├ ƒ /donate/[id]
+├ ○ /donate/cancelled
+├ ○ /donate/success
+├ ○ /how-it-works/donors
+├ ○ /how-it-works/recipients
+├ ○ /leaderboard
+├ ○ /local
+├ ○ /our-mission
+├ ƒ /profile/[id]
+├ ƒ /profile/[id]/print
+├ ○ /recipient-dashboard
+├ ○ /transparency
+└ ○ /where-to-spend
+```
+
+**Files changed:**
+- New: src/components/site-header.tsx, site-footer.tsx
+- New: src/app/our-mission/page.tsx
+- New: src/app/how-it-works/donors/page.tsx, recipients/page.tsx
+- New: src/app/community/page.tsx, community-grid.tsx
+- New: src/app/transparency/page.tsx
+- New: src/app/where-to-spend/page.tsx
+- New: src/app/leaderboard/page.tsx
+- New: src/app/local/page.tsx, local-finder.tsx
+- New: src/app/admin/page.tsx
+- New: src/app/profile/[id]/print/page.tsx
+- New: src/app/recipient-dashboard/page.tsx, emergency-button.tsx
+- New: src/app/api/wallet-pass/route.ts
+- Rewritten: src/lib/users.ts (complete data model overhaul)
+- Rewritten: src/app/page.tsx (new homepage)
+- Rewritten: src/app/donate/[id]/donation-form.tsx (all new features)
+- Rewritten: src/app/profile/[id]/page.tsx (journey, wishlist, messages, savings)
+- Updated: src/app/donate/[id]/page.tsx (new props)
+- Updated: src/app/api/checkout/route.ts (subscriptions, new metadata)
+- Updated: docs/ROADMAP.md, project_summary.md, build_log.md
+
+**Follow-ups:** Push to GitHub. Deploy to Vercel. Phase 3: Supabase database integration.

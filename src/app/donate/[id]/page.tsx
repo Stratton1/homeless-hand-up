@@ -93,6 +93,9 @@ export default async function DonatePage({ params }: DonatePageProps) {
           maximumDonation={APP_CONFIG.maximumDonation}
           serviceChargePercentage={APP_CONFIG.serviceChargePercentage}
           savingsPercentage={APP_CONFIG.savingsPercentage}
+          wishlistItems={user.wishlist}
+          matchedFundingPartner={user.matchedFundingPartner}
+          matchedFundingMultiplier={user.matchedFundingMultiplier}
         />
 
         {/* Trust badges */}
